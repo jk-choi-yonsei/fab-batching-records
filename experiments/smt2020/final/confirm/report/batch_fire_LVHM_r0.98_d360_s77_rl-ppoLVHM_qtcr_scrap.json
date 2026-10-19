@@ -1,0 +1,223 @@
+{
+ "arm": "rl:ppoLVHM",
+ "weights": "../../experiments/smt2020/runs/batch_LVHM_qtcr2/weights_best.pt",
+ "dataset": "LVHM",
+ "scale": 0.98,
+ "seed": 77,
+ "days": 360,
+ "base": "cr",
+ "cqt_rule": "qtcr",
+ "scrap": true,
+ "minrun_break_h": 0.0,
+ "scrap_kpi": {
+  "completed_per_day": 35.99,
+  "scrapped_per_day": 19.6,
+  "on_time_pct_of_completed": 99.91,
+  "on_time_pct_of_completed_plus_scrapped": 64.68,
+  "cycle_p50_days": 24.95,
+  "scrapped_total": 7271
+ },
+ "warmup_days": 87.0,
+ "wall_s": 1301.8,
+ "batch_fill": 0.9118,
+ "batches_fired": 34699,
+ "batches_partial": 5986,
+ "policy_decisions": 571495,
+ "wip_end": 1293,
+ "wip_slope_back_half": 0.025451608608756313,
+ "released_per_day": 62.03888888888889,
+ "env_stats": {
+  "went_tardy": 122,
+  "dispatch": 5786831,
+  "lots_dispatched": 5977900,
+  "auto": 5815716,
+  "auto_nonbatch": 208531,
+  "defer_minruns": 272115,
+  "late": 106,
+  "ontime": 13664,
+  "defer": 536796
+ },
+ "trace": [
+  {
+   "day": 10.0,
+   "wip": 1953,
+   "done": 496
+  },
+  {
+   "day": 20.0,
+   "wip": 1590,
+   "done": 1222
+  },
+  {
+   "day": 30.0,
+   "wip": 1380,
+   "done": 1674
+  },
+  {
+   "day": 40.0,
+   "wip": 1211,
+   "done": 2101
+  },
+  {
+   "day": 50.0,
+   "wip": 1265,
+   "done": 2484
+  },
+  {
+   "day": 60.0,
+   "wip": 1218,
+   "done": 2909
+  },
+  {
+   "day": 70.0,
+   "wip": 1182,
+   "done": 3297
+  },
+  {
+   "day": 80.0,
+   "wip": 1188,
+   "done": 3672
+  },
+  {
+   "day": 90.0,
+   "wip": 1253,
+   "done": 3991
+  },
+  {
+   "day": 100.0,
+   "wip": 1350,
+   "done": 4313
+  },
+  {
+   "day": 110.0,
+   "wip": 1431,
+   "done": 4660
+  },
+  {
+   "day": 120.0,
+   "wip": 1398,
+   "done": 5058
+  },
+  {
+   "day": 130.0,
+   "wip": 1340,
+   "done": 5384
+  },
+  {
+   "day": 140.0,
+   "wip": 1376,
+   "done": 5741
+  },
+  {
+   "day": 150.0,
+   "wip": 1226,
+   "done": 6171
+  },
+  {
+   "day": 160.0,
+   "wip": 1200,
+   "done": 6539
+  },
+  {
+   "day": 170.0,
+   "wip": 1260,
+   "done": 6926
+  },
+  {
+   "day": 180.0,
+   "wip": 1285,
+   "done": 7331
+  },
+  {
+   "day": 190.0,
+   "wip": 1332,
+   "done": 7624
+  },
+  {
+   "day": 200.0,
+   "wip": 1402,
+   "done": 7939
+  },
+  {
+   "day": 210.0,
+   "wip": 1368,
+   "done": 8319
+  },
+  {
+   "day": 220.0,
+   "wip": 1173,
+   "done": 8645
+  },
+  {
+   "day": 230.0,
+   "wip": 1296,
+   "done": 8960
+  },
+  {
+   "day": 240.0,
+   "wip": 1345,
+   "done": 9298
+  },
+  {
+   "day": 250.0,
+   "wip": 1224,
+   "done": 9739
+  },
+  {
+   "day": 260.0,
+   "wip": 1178,
+   "done": 10122
+  },
+  {
+   "day": 270.0,
+   "wip": 1266,
+   "done": 10454
+  },
+  {
+   "day": 280.0,
+   "wip": 1153,
+   "done": 10827
+  },
+  {
+   "day": 290.0,
+   "wip": 1376,
+   "done": 11089
+  },
+  {
+   "day": 300.1,
+   "wip": 1406,
+   "done": 11526
+  },
+  {
+   "day": 310.1,
+   "wip": 1451,
+   "done": 11819
+  },
+  {
+   "day": 320.1,
+   "wip": 1493,
+   "done": 12211
+  },
+  {
+   "day": 330.1,
+   "wip": 1337,
+   "done": 12620
+  },
+  {
+   "day": 340.1,
+   "wip": 1273,
+   "done": 13009
+  },
+  {
+   "day": 350.1,
+   "wip": 1304,
+   "done": 13350
+  },
+  {
+   "day": 360.0,
+   "wip": 1293,
+   "done": 13770
+  }
+ ],
+ "warm_arm": null
+}

@@ -1,0 +1,6 @@
+# PROTOCOL_shift.md: probe at rate 1.05: the control limit at 1.5 h, seeds 64 and 65
+
+python batch_fire.py --dataset HVLM --scale 1.05 --days 360 --measure-from 0.241667 --arm clock:1.5 --cqt-rule qtcr --scrap --seed 64 --out ../../experiments/smt2020/final/shift/probe  ->  ../../experiments/smt2020/final/shift/probe/batch_fire_HVLM_r1.05_d360_s64_clock1.5_qtcr_scrap.json
+python batch_fire.py --dataset HVLM --scale 1.05 --days 360 --measure-from 0.241667 --arm clock:1.5 --cqt-rule qtcr --scrap --seed 65 --out ../../experiments/smt2020/final/shift/probe  ->  ../../experiments/smt2020/final/shift/probe/batch_fire_HVLM_r1.05_d360_s65_clock1.5_qtcr_scrap.json
+python batch_fire.py --dataset LVHM --scale 1.05 --days 360 --measure-from 0.241667 --arm clock:1.5 --cqt-rule qtcr --scrap --seed 64 --out ../../experiments/smt2020/final/shift/probe  ->  ../../experiments/smt2020/final/shift/probe/batch_fire_LVHM_r1.05_d360_s64_clock1.5_qtcr_scrap.json
+python batch_fire.py --dataset LVHM --scale 1.05 --days 360 --measure-from 0.241667 --arm clock:1.5 --cqt-rule qtcr --scrap --seed 65 --out ../../experiments/smt2020/final/shift/probe  ->  ../../experiments/smt2020/final/shift/probe/batch_fire_LVHM_r1.05_d360_s65_clock1.5_qtcr_scrap.json

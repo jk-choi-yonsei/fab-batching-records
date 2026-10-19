@@ -1,0 +1,26 @@
+LVHM_p1_s100.json                  explore:0.02 seed 100: 158,078 transitions
+LVHM_p1_s101.json                  explore:0.02 seed 101: 157,033 transitions
+
+315,111 transitions, 108,166 at free (under-full, live-clock) decisions, 2,168 fired; lam 0.003, mu 0.0, gamma_h 0.9; VI converged in 1131 sweeps
+back-off: 0 of 6 cells lack 10 observations of both actions (0.00% of logged free decisions) and take the residual-only decision [1, 1, 1, 1, 0, 0]; 0 entries change
+
+   tightest |          nxt[0,24.01)        
+            |                  f0          
+  [0,0.25)h |          FIRE 81/4598        
+[0.25,0.5)h |          FIRE 84/4303        
+   [0.5,1)h |          FIRE162/8477        
+     [1,2)h |         FIRE361/17886        
+     [2,4)h |         wait910/42093        
+ [4,24.01)h |         wait570/28641        
+   (each cell: decision, then fired/waited transitions observed there)
+
+Q(fire) - Q(wait), lots, by tightest bin (mean over the bin's cells weighted by visits):
+  [0,0.25)h  +0.223   fire cells 1/1
+  [0.25,0.5)h  +0.081   fire cells 1/1
+  [0.5,1)h  +0.028   fire cells 1/1
+  [1,2)h  +0.003   fire cells 1/1
+  [2,4)h  -0.056   fire cells 0/1
+  [4,24.01)h  -0.051   fire cells 0/1
+fire region: 4 of 6 cells; share of logged free decisions it fires: 33.24%  (the rule clock:1 fires ~1.2%)
+V: full -0.226; no-clock mean -0.214; free mean -0.298
+wrote ../../experiments/smt2020/final/betarx/family/LVHM_resid_b0p003_t1.json

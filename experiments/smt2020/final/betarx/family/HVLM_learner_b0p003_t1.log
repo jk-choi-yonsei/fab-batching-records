@@ -1,0 +1,26 @@
+HVLM_p1_s100.json                  explore:0.02 seed 100: 171,118 transitions
+HVLM_p1_s101.json                  explore:0.02 seed 101: 170,764 transitions
+
+341,882 transitions, 126,636 at free (under-full, live-clock) decisions, 2,548 fired; lam 0.003, mu 0.0, gamma_h 0.9; VI converged in 1310 sweeps
+back-off: 2 of 24 cells lack 10 observations of both actions (0.32% of logged free decisions) and take the residual-only decision [1, 1, 1, 1, 0, 0]; 0 entries change
+
+   tightest |          nxt[0,0.25)          |          nxt[0.25,1)          |            nxt[1,3)           |          nxt[3,24.01)        
+            |                  f0           |                  f0           |                  f0           |                  f0          
+  [0,0.25)h |          FIRE 11/585          |          FIRE 18/988          |          FIRE  3/183          |          FIRE 16/1026        
+[0.25,0.5)h |          wait 11/560          |          FIRE 21/812          |          FIRE  8/209          |          FIRE 16/945         
+   [0.5,1)h |          wait 34/1409         |          FIRE 43/1909         |          FIRE 12/488          |          FIRE 43/2168        
+     [1,2)h |          wait 70/3439         |          wait111/5061         |          FIRE 27/872          |          FIRE 86/4346        
+     [2,4)h |         wait313/14432         |         wait379/18533         |          wait 31/1801         |         wait274/12794        
+ [4,24.01)h |         wait413/19934         |          wait184/9808         |          wait 10/408          |         wait414/21378        
+   (each cell: decision, then fired/waited transitions observed there)
+
+Q(fire) - Q(wait), lots, by tightest bin (mean over the bin's cells weighted by visits):
+  [0,0.25)h  +0.247   fire cells 4/4
+  [0.25,0.5)h  +0.114   fire cells 3/4
+  [0.5,1)h  +0.034   fire cells 3/4
+  [1,2)h  -0.010   fire cells 2/4
+  [2,4)h  -0.038   fire cells 0/4
+  [4,24.01)h  -0.045   fire cells 0/4
+fire region: 12 of 24 cells; share of logged free decisions it fires: 11.71%  (the rule clock:1 fires ~1.2%)
+V: full -0.173; no-clock mean -0.172; free mean -0.234
+wrote ../../experiments/smt2020/final/betarx/family/HVLM_learner_b0p003_t1.json

@@ -1,0 +1,28 @@
+This repository is licensed under the MIT License (see LICENSE). It builds on the
+following third-party work, which keeps its own terms.
+
+PySCFabSim (external/PySCFabSim-release, pinned at 0dbff6a)
+  Copyright (c) 2026 Research Group Production Systems. MIT License
+  (external/PySCFabSim-release/LICENSE). The simulator is used unmodified through
+  the submodule. Two files of ours contain adapted copies of its code and are
+  covered by the same MIT terms with that notice:
+    fabhybrid/smt2020/fab_env.py      the candidate-load selection and the
+                                      post-selection handling of its greedy
+                                      dispatcher, patched to defer a load
+    fabhybrid/smt2020/rl_env.py       Instance.next_step, patched to guard the
+                                      lot's next step
+
+SMT2020 testbed data (external/PySCFabSim-release/datasets/SMT2020_HVLM, SMT2020_LVHM)
+  Kopp, Hassoun, Kalir and Moench, "SMT2020 - A Semiconductor Manufacturing
+  Testbed", IEEE Transactions on Semiconductor Manufacturing 33(4), 2020,
+  doi:10.1109/TSM.2020.3001933. Distributed by its authors at
+  https://p2schedgen.fernuni-hagen.de/index.php/downloads/simulation and shipped
+  with the simulator. The data files are not ours and are not relicensed here.
+
+RL4SemiconductorFabSched (external/RL4SemiconductorFabSched, pinned at 89467c6)
+  Copyright (c) 2023 Pierre Tassel. MIT License. Not used by the code of the
+  paper; referenced only by code retired to archive/ in the development
+  repository, which the public package does not include.
+
+Rolim parallel-batch instances (experiments/pbatch/bench)
+  CC BY 4.0, Mendeley Data, doi:10.17632/nmfsh6ygtk.1. Used only by code retired to archive/ in the development repository.

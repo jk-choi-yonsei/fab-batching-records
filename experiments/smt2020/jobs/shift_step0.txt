@@ -1,0 +1,4 @@
+# PROTOCOL_shift.md: step 0: the timeout rule at 0.90, HVLM seed 64, twice
+
+python batch_fire.py --dataset HVLM --scale 0.9 --days 360 --measure-from 0.241667 --arm timeout:1 --cqt-rule qtcr --scrap --seed 64 --out ../../experiments/smt2020/final/shift/step0/a  ->  ../../experiments/smt2020/final/shift/step0/a/batch_fire_HVLM_r0.9_d360_s64_timeout1_qtcr_scrap.json
+python batch_fire.py --dataset HVLM --scale 0.9 --days 360 --measure-from 0.241667 --arm timeout:1 --cqt-rule qtcr --scrap --seed 64 --out ../../experiments/smt2020/final/shift/step0/b  ->  ../../experiments/smt2020/final/shift/step0/b/batch_fire_HVLM_r0.9_d360_s64_timeout1_qtcr_scrap.json

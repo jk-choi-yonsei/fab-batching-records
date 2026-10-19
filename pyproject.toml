@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fabhybrid"
+version = "1.0.0"
+description = "Batching under queue-time constraints learned from dispatching records: the learner, the rules, the confirmatory block and the figures of the IJPR manuscript, on SMT2020 in PySCFabSim"
+license = {file = "LICENSE"}
+authors = [{name = "Jongkwan Choi"}, {name = "Chang Ouk Kim"}]
+requires-python = ">=3.9"
+# Intentionally empty so `pip install -e .` works offline; the environment the paper used is
+# listed in fabhybrid/smt2020/README.md (Python 3.9, numpy 1.26, scipy 1.13, simpy 4.1, torch 2.8).
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["fabhybrid*"]
