@@ -3,19 +3,10 @@
 Provenance matters here, so it is spelled out. The benchmark is SMT2020 (Kopp,
 Hassoun, Kalir, Moench, IEEE TSM 2020); the simulator is PySCFabSim
 (`external/PySCFabSim-release`), whose datasets/ directory holds the SMT2020
-files byte-for-byte. We used to load a different repo's fork of that simulator
-and, worse, its shipped `365days_HVLM.pkl` -- a fab that had already been run
-for a year by one dispatching rule. That artifact was not a neutral start:
-
-    WIP.txt as shipped ............  2,255 lots, cycle time 39 d (design point)
-    + 365 d under that rule .......  3,549 lots, 62 d,  33% of WIP past due
-    + 232 d under net+hold ........  5,391 lots, 94 d,  58% of WIP past due
-
-Every evaluation done on top of that inherited the second row's damage, and
-every policy compared there was measured on a state some other policy made.
-So this module builds the instance the way the simulator's own reproduction
-script does -- `FileInstance` over the dataset files, t=0, the shipped initial
-WIP -- and the pickle is gone.
+files byte-for-byte. This module builds the instance the way the simulator's
+own reproduction script does -- `FileInstance` over the dataset files, t=0, the
+shipped initial WIP (WIP.txt: 2,255 lots, cycle time 39 d, the design point) --
+so that no policy is measured on a state some other policy made.
 
 The upstream protocol, from `greedy_runner.py` and `simulation/stats.py`:
 730 simulated days per run, seeds 0-9, statistics over every completed lot
@@ -114,9 +105,8 @@ def new_instance(dataset="HVLM", seed=0, days=BENCH_DAYS, plugins=None,
 
 
 def _instance(dataset="HVLM", seed=0, days=BENCH_DAYS):
-    """Back-compatible alias. NOTE: this used to return a 365-day pre-warmed
-    pickle; it now returns the benchmark's own t=0 state. Anything that assumed
-    a warmed fab needs to run its own warm-up."""
+    """Alias of new_instance: the benchmark's own t=0 state. Anything that
+    needs a warmed fab runs its own warm-up."""
     return new_instance(dataset, seed=seed, days=days)
 
 

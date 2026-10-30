@@ -1,4 +1,4 @@
-"""Figure 1: the setting, drawn as the author's own figures are: the things themselves, labelled by name.
+"""Figure 1: the setting, drawn as the things themselves, labelled by name.
 
 A source step, the path to a furnace under a queue-time limit tau, lots waiting in front of the furnace
 with their residuals (the tightest marked), the next lot on its way with u, the furnace holding an
@@ -20,8 +20,8 @@ sys.path.insert(0, HERE)
 import house_style  # noqa: E402
 
 WIDTH = 5.67                      # text width of the Interact layout, inches
-FS = 10.0                         # every text of the figure, near the body's 11 pt (the author, 2026-10-16)
-INK = "#1f3b57"                   # the navy outline of the author's figures
+FS = 10.0                         # every text of the figure, near the body's 11 pt
+INK = "#1f3b57"                   # the navy outline
 GREY = "#8a8f98"
 LOT = "#e8e8e8"
 LOT_EDGE = "#3a3a3a"
@@ -45,7 +45,7 @@ def arrow(ax, p, q, color=INK, lw=1.3, ls="-", ms=11, z=2):
 
 
 def lot(ax, x, y, s, fc, ec, label=None, label_color=None):
-    """A lot drawn as a carrier: a box with two rails, like the cassettes of the author's figures."""
+    """A lot drawn as a carrier: a box with two rails, like a cassette."""
     box(ax, x - s / 2, y - s / 2, s, s, fc, ec=ec, lw=1.2, r=0.06, z=4)
     for dy in (-0.11, 0.11):
         ax.plot([x - s / 2 + 0.06, x + s / 2 - 0.06], [y + dy, y + dy], color=ec, lw=0.7, zorder=5)

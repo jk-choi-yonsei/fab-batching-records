@@ -10,7 +10,8 @@
 Every step is skipped if its output already exists, so the script can be
 re-run to resume. Logs go to experiments/smt2020/runs/batch_<fab><suffix>/pipeline.log.
 
-  python run_training.py --dataset HVLM --cqt-rule qtcr --suffix _qtcr --no-eval   # as jobs/retrain_bcppo_qtcr.sh
+  python run_training.py --dataset HVLM --cqt-rule qtcr --suffix _qtcr --runs-suffix _qtcr2 --no-eval
+                                         # the paper's BC and PPO
 """
 import argparse
 import glob
@@ -34,13 +35,13 @@ def main():
     ap.add_argument("--bc-days", type=float, default=10.0)
     ap.add_argument("--eval-parallel", type=int, default=6)
     ap.add_argument("--cqt-rule", default="none",
-                    help="queue-time rule of the training windows; qtcr for the 2026-10 retraining")
+                    help="queue-time rule of the training windows; qtcr for the paper's BC and PPO")
     ap.add_argument("--suffix", default="",
                     help="suffix of the runs directory (runs/batch_<fab><suffix>) and of the snapshot names "
-                         "(snap_<fab>_r0.98<suffix>_s*.pkl.gz); '_qtcr' for the 2026-10 retraining")
+                         "(snap_<fab>_r0.98<suffix>_s*.pkl.gz); '_qtcr' for the paper's BC and PPO")
     ap.add_argument("--runs-suffix", default=None,
                     help="suffix of the runs directory when it differs from the snapshots' (default: --suffix); "
-                         "'_qtcr2' for the 2026-10-19 retraining without the elapsed-time inputs")
+                         "'_qtcr2' for the paper's BC and PPO, which take no elapsed-time inputs")
     ap.add_argument("--no-eval", action="store_true", help="stop after PPO; the block's own jobs evaluate the weights")
     a = ap.parse_args()
 

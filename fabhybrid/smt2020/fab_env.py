@@ -1,15 +1,10 @@
 """Layer-1 environment: PySCFabSim's own dispatch loop with the ordering
 decision handed to a policy.
 
-The previous version reimplemented the loop, and lost 37% of the fab's
-throughput doing it: 35.7 lots/day against the 57.2 released, WIP climbing
-from 2,228 to 6,109 over 180 days, 61% of it past due. Upstream's own loop on
-the same dataset, same seed, same t=0 state settles at 57-58 lots/day with
-Lot_3 at 52.0 days and Lot_4 at 28.7 -- which is the benchmark's shipped
-reference (51.21 / 28.38) to within a day. The fab was never the problem.
-
-What the reimplementation left out is exactly what
-`get_lots_to_dispatch_by_machine` does after it sorts:
+Upstream's own loop, from the shipped t=0 state, settles at 57-58 lots/day
+with Lot_3 at 52.0 days and Lot_4 at 28.7 -- the benchmark's shipped
+reference (51.21 / 28.38) to within a day. After it sorts,
+`get_lots_to_dispatch_by_machine` does four more things:
 
   - group a machine's waiting lots by step and rank groups by batch FILL, not
     by the head lot alone;
@@ -19,7 +14,7 @@ What the reimplementation left out is exactly what
     in the family that already has that setup;
   - honour min_runs_left, up to five deferrals.
 
-So this module does not reimplement any of it. It runs upstream's loop and
+This module does not reimplement any of it. It runs upstream's loop and
 upstream's selection code verbatim, and replaces one thing: which candidate
 group goes on the machine. That is the only place a dispatching policy has
 any business acting, and it keeps every hard constraint on upstream's side
@@ -116,8 +111,8 @@ def candidate_groups(instance, machine, ptuple_fcn, cqt=None, top_k=6):
             0 if len(l) >= l[0].actual_step.batch_min else 1,
             *(l[0].ptuple[2:]),
         ))
-    # A non-batch step normally offers the rule's pick and nothing else, which
-    # is why the policy never saw a queue-time decision: every clock start is a
+    # A non-batch step normally offers the rule's pick and nothing else, so
+    # the policy would never see a queue-time decision: every clock start is a
     # singleton dispatch. When a constraint is in play, offer the alternatives
     # too, so declining to start a clock is an action the policy can take.
     if cqt is not None:
@@ -193,7 +188,7 @@ class FabEnv:
         # scrapped lot (w = priority/10) -- the scrap game's own objective.
         self.batch_only = bool(batch_only)
         # env -> candidate group -> bool (True = refuse). None disables the hook
-        # entirely, which is the default, so every earlier run reproduces.
+        # entirely, which is the default.
         self.source_gate = source_gate
         if reward not in ("tardiness", "yield"):
             raise ValueError(f"reward must be 'tardiness' or 'yield', not {reward!r}")
@@ -205,8 +200,6 @@ class FabEnv:
             "cr": Dispatchers.cr_ptuple_for_lot,
             "fifo": Dispatchers.fifo_ptuple_for_lot,
             "kopp": kopp.base_ptuple}[rule]
-        # the simulator raises on_cqt_violated on its plugins; nothing in this
-        # project ever listened, so queue-time breaks were invisible
         # A queue-time break is a point charge on one lot that the other 499
         # steps cannot offset -- the only quantity in this fab that does not
         # average. The monitor is always attached so the policy can see the
@@ -217,9 +210,8 @@ class FabEnv:
         # measured against them rather than against this project's inventions
         self.cqt_rule = cqt_rule
         # Kopp's lot stopping: a named scenario ("none"/"high"/"medium"/"small")
-        # or a {family: (t1, t2)} dict. One entry point -- the scalar t1/t2 pair
-        # it replaces set the same threshold on all 106 families, which is not
-        # what they do and never fired here anyway.
+        # or a {family: (t1, t2)} dict. One entry point, with thresholds per
+        # family: the same threshold on all 106 families is not what they do.
         self.stop_scenario = stopping
         self.stopping = None
         # The ablation is the information, not the architecture: the three
@@ -380,10 +372,10 @@ class FabEnv:
         self._yield_pending -= w
 
     FAM_REFRESH_S = 3600.0             # family state is a slow variable
-    # ~10 days at that cadence. Two days was wrong: the validated signal is the
-    # queue against the family's long-run typical level, and a two-day baseline
-    # catches up to a three-day excursion and erases exactly the case worth
-    # seeing. Long enough to be a level, short enough to be this fab's level.
+    # ~10 days at that cadence. The validated signal is the queue against the
+    # family's long-run typical level, and a two-day baseline would catch up to a
+    # three-day excursion and erase exactly the case worth seeing. Long enough to
+    # be a level, short enough to be this fab's level.
     FAM_EMA = 1.0 / 240.0
 
     def _refresh_fam(self):
@@ -519,7 +511,7 @@ class FabEnv:
             # a scrapped lot is gone; it neither completes nor keeps accruing.
             # Left in, it would be charged from its due date to the end of the
             # run, because the charge only stops at a completion that never
-            # comes -- which is what made scrapping look 36x worse than it is.
+            # comes.
             if getattr(l, "scrapped_at", None) is not None:
                 continue
             if getattr(l, "done_at", None) is None or l.done_at > l.deadline_at:
@@ -604,11 +596,9 @@ class FabEnv:
             # sit HERE, above the auto-commit branches, because `group_is_full`
             # is trivially true for a non-batch step (batch_max = 1), so a
             # single-candidate non-batch dispatch is taken as dynamics and never
-            # reaches the batch_only branch -- with the hook there it saw zero
-            # clock-source decisions in a 20-day run. Filtering rather than
-            # deferring also gives the comparator its best shot: gating a LOT
-            # should not idle a tool that has other work. None by default, so
-            # every earlier run reproduces bit for bit.
+            # reaches the batch_only branch. Filtering rather than deferring also
+            # gives the comparator its best shot: gating a LOT should not idle a
+            # tool that has other work. None by default.
             if self.source_gate is not None:
                 keep = [g for g in groups if not self.source_gate(self, g)]
                 if not keep:
@@ -752,7 +742,7 @@ class FabEnv:
                 extra[i, 3] = max(-48.0, min(48.0, best))
             # the same margin with "no clock" read as a wide margin, so that a
             # minimum over groups is the tool's tightest clock -- the quantity
-            # the law thresholds (column 3 keeps its legacy zero default)
+            # the law thresholds (column 3 keeps its zero default)
             extra[i, 17] = max(-48.0, min(48.0, best)) if best is not None else 48.0
             # and whether running this group would START a clock: the only
             # move that avoids the trade instead of making it
@@ -774,8 +764,8 @@ class FabEnv:
                     extra[i, 10] = min(30.0, len(self.fam_machines.get(tf, ())))
             # where the rule would rank this group. Without it the policy has
             # to re-derive the rule's ordering from raw features before it can
-            # even imitate it, which is why cloning fell to 88%; with it, the
-            # policy's job is the interesting one -- when to deviate.
+            # even imitate it; with it, the policy's job is the interesting one --
+            # when to deviate.
             extra[i, 6] = i
         return feats, tg, torch.from_numpy(extra), True
 

@@ -2,7 +2,7 @@
 
 The simulator's NATIVE randomness never produces a large correlated shock (failures
 are independent per machine; 2x the mean number-down is a ~4-sigma event), so the
-tail we want the LLM to audit has to be injected deliberately.
+tail has to be injected deliberately.
 
 We reuse the simulator's own ``BreakdownEvent`` so an injected outage flows through
 exactly the same code path as a native failure -- only the timing, the targets and
@@ -91,7 +91,7 @@ def compress_release(inst, factor):
     """The same transform for factor > 1: inter-arrival gaps shrink by 1/factor,
     each lot keeps its own allowance. Kept separate from `scale_release` so the
     slow-only guard every existing caller relies on stays as it is. Used to
-    measure the congestion side of the load axis (2026-09-06)."""
+    measure the congestion side of the load axis."""
     if factor <= 1.0:
         return {"type": "release_compress", "factor": factor, "changed": 0}
     return _rescale_release(inst, factor)

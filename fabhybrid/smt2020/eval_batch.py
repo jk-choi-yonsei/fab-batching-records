@@ -1,6 +1,6 @@
 """Score a learned batch policy the way batch_fire scores an arm: greedy, from
 the benchmark's own t=0 state, over --days with the back half measured, in the
-scrap game, writing the same JSON block so bf_report.py (archive/2026-10-closed-lines/stage-b-report) reads it as an arm
+scrap game, writing the same JSON block as batch_fire, with the arm
 named rl:<weights file>. Nothing about the dataset or release scale is baked
 into the policy, so the same weights run on either fab at any load.
 
@@ -32,15 +32,12 @@ def main():
     ap.add_argument("--measure-from", type=float, default=0.5)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--cqt-rule", default="none",
-                    help="sequencing rule to compose with; the paper's base is qtcr. "
-                         "Was silently dropped before 2026-09-09, so every learned "
-                         "number on record was measured against cqt_rule=none.")
+                    help="sequencing rule to compose with; the paper's base is qtcr.")
     ap.add_argument("--warm-arm", default=None,
                     help="hand over at --measure-from: this arm (e.g. clock:1) drives the warm-up, the policy "
                          "drives the measured window. The snapshot-trained policies were only ever shown a "
                          "running fab, and from a cold start they defer until the fab stops; this scores them "
-                         "the way they were trained. Reported ALONGSIDE the cold-start number, never instead "
-                         "of it -- no other arm gets a warmed start.")
+                         "the way they were trained. No other arm gets a warmed start.")
     ap.add_argument("--tag", default=None, help="name for the report (default: weights file stem)")
     ap.add_argument("--out", default=".")
     a = ap.parse_args()

@@ -5,9 +5,9 @@ train_batch.py and eval_batch.py.
               and the global vector), clipped at +-20
   row_feats   one row per candidate group: the head lot's 12 benchmark
               features followed by FabEnv's N_EXTRA per-group columns
-  global_vec  the fab_features snapshot, cached per simulated day, plus four
-              per-step extras (groups, usable machines, fraction of the day,
-              episode progress); N_G is its width
+  global_vec  the fab_features snapshot without t_days, cached per simulated
+              day, plus three per-step extras (groups, usable machines, fraction
+              of the day); N_G is its width
   ppo_epochs  clipped-PPO passes over the kept steps of a set of chunks, with
               the per-lot value loss (cfg.credit == "lot") or a global critic,
               and an optional KL anchor to a reference policy
@@ -19,12 +19,7 @@ asks each chunk for kidx, feats, tg, g_all, wait_ok, act, logp, step_slice(sel),
 and y (lot credit) or ret (episode credit); and cfg for epochs, minibatch,
 clip, credit, vcoef, entcoef and kl_beta.
 
-Until 2026-10-10 this file was also the whole-fab layer-1 PPO trainer (the
-Policy actor, rollout workers, lot-scoped credit and the learn loop). That
-trainer is archived byte-identical at
-archive/deadtime-final/legacy/fabhybrid-v1/smt2020/train_l1.py; its evaluator,
-eval_l1.py, is in archive/2026-08-closed-probes/smt2020/. Nothing here runs as
-a script.
+Nothing here runs as a script.
 """
 import json
 from collections import defaultdict
@@ -36,12 +31,12 @@ import torch.nn as nn
 from rl_env import SECONDS_PER_DAY as SPD
 from fab_features import snapshot as global_snapshot, FEATURES as GFEATS_ALL
 
-# 2026-10-19: the days since the episode start (t_days) and the episode progress are no longer inputs; they spanned
-# the 10-day training windows in training and the 360-day run in evaluation. Weights trained with them (the
-# 2026-10-10 runs) are still evaluated: Norm reads the width from norm.json and global_vec takes time_inputs.
+# the days since the episode start (t_days) and the episode progress are not inputs: they span the 10-day
+# windows in training and the 360-day run in evaluation. Weights trained with them still load: Norm reads the
+# width from norm.json and global_vec takes time_inputs.
 GFEATS = [k for k in GFEATS_ALL if k != "t_days"]
 N_G = len(GFEATS) + 3     # + n_groups, free_machines, frac_of_day
-N_G_TIME = len(GFEATS_ALL) + 4   # the width with t_days and ep_progress, as before 2026-10-19
+N_G_TIME = len(GFEATS_ALL) + 4   # the width with t_days and ep_progress
 EMB = 12
 NEG = -1e9
 
@@ -55,7 +50,7 @@ class Norm:
         self.lsd = np.array(j["lot_sd"], np.float32)
         self.gmu = np.array(j["g_mu"], np.float32)
         self.gsd = np.array(j["g_sd"], np.float32)
-        self.time_inputs = len(self.gmu) == N_G_TIME    # weights trained before 2026-10-19
+        self.time_inputs = len(self.gmu) == N_G_TIME    # weights trained with the elapsed-time inputs
 
     def lots(self, f):
         if f.shape[1] != self.lmu.shape[0]:
@@ -67,8 +62,8 @@ class Norm:
 
 
 def global_vec(env, time_inputs=False):
-    """Daily-cached global features + cheap per-step extras; with time_inputs, the width of the weights trained
-    before 2026-10-19 (t_days among the daily features, the episode progress among the extras)."""
+    """Daily-cached global features + cheap per-step extras; with time_inputs, the width of weights trained
+    with the elapsed-time inputs (t_days among the daily features, the episode progress among the extras)."""
     inst = env.instance
     d = int(inst.current_time / SPD)
     keys = GFEATS_ALL if time_inputs else GFEATS

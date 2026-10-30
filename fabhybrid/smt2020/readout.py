@@ -1,26 +1,15 @@
-"""What did the learner learn? Read the policy out, decision by decision.
+"""Reads a policy out decision by decision: runs one arm (a fitted table, or a rule) for `--days`,
+records the feature vector and the action at every batch decision and, with `--dump-lots`, writes
+the dispatching record that fit_q.py reads. The read-out asks three questions of the record:
 
-The paper's claim is that PART of the learned policy is a rule -- a cut on one
-number -- and that the rest is what a rule cannot say. That has to be measured,
-not asserted, and measured on the decisions the policy actually faced. This
-runs an arm (a fitted artefact, or a rule for calibration) for `--days`,
-records the feature vector and the action at every batch decision, and then
-asks three questions of the record:
+  1. Under-full decisions. For every feature, the best one-sided cut (start iff x < t, or x > t)
+     and the fraction of the policy's own start/wait decisions it reproduces.
+  2. Full-load decisions. How often the policy holds a full head group, and how often it starts
+     a different group instead.
+  3. Which group, when several are full or under-full: agreement with the simulator's own ordering.
 
-  1. Under-full decisions -- the decision the law speaks to. For every single
-     feature, the best one-sided cut (fire iff x < t, or x > t) and the
-     fraction of the policy's own fire/wait decisions it reproduces. If the
-     cut on the tightest residual explains ~all of them, the learner found the
-     control limit; the theory then says why that is right.
-  2. Full-load decisions. How often the policy HOLDS a full head group, and how
-     often it fires a different group instead -- the two dimensions upstream
-     never uses, which the chain model prices at "sometimes" and "never".
-  3. Which group, when several are full or under-full: agreement with
-     upstream's own ordering.
-
-Calibration: `--arm clock:1` must read out as a 100% cut on own_res (the
-tightest residual) by construction; a random policy artefact should read out
-as nothing in particular. Both are run before any learned artefact is.
+Calibration: `--arm clock:1` reads out as a 100% cut on own_res (the tightest residual) by
+construction; a random policy reads out as nothing in particular.
 
   python readout.py --dataset HVLM --arm level:1 --theta <best.json> --days 30
   python readout.py --dataset HVLM --arm clock:1 --days 30          # calibration
@@ -58,7 +47,7 @@ def _tap_factory(orig):
             REC["mach"].append(env._machine.idx)
             REC["step"].append(f"{g0[0].actual_step.family}|{g0[0].actual_step.step_name}")
             REC["size"].append(len(g0))
-            # lot identity, for the rule's confusion matrix: who stood in the head
+            # lot identity: who stood in the head
             # group, and every live clock the rule's `tightest` is computed over.
             # SAME test as choose() and phi() -- the clock must STOP at this step --
             # so the recorded set is exactly what the rule thresholds.
@@ -109,7 +98,7 @@ def main():
     ap.add_argument("--scale", type=float, default=0.98)
     ap.add_argument("--cqt-rule", default="qtcr")
     ap.add_argument("--out", default=None)
-    ap.add_argument("--eps", type=float, default=0.0, help="round-2 exploration around a table artefact (see batch_fire --eps)")
+    ap.add_argument("--eps", type=float, default=0.0, help="exploration around a table artefact (see batch_fire --eps)")
     ap.add_argument("--eps-fw", type=float, default=0.0)
     ap.add_argument("--eps-wf", type=float, default=0.0)
     ap.add_argument("--dump", default=None, help="save the raw (phi, full, action, n_groups) record as .npz")
@@ -119,8 +108,7 @@ def main():
                     help="write only what fit_q.py reads: no lot identities, no clock-event ledger, phi cut to the fill")
     ap.add_argument("--dump-lots", default=None,
                     help="save per-decision lot identities + live clocks, and the whole queue-time event "
-                         "ledger (who died, when, where), as .json -- the input to fit_q.py and table_agree.py "
-                         "(first written for confusion.py, now in archive/2026-09-batch-line-closed/)")
+                         "ledger (who died, when, where), as .json -- the input to fit_q.py and table_agree.py")
     a = ap.parse_args()
 
     class A:

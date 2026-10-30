@@ -1,22 +1,22 @@
 """The tables and the quoted numbers of the paper, rendered from a results file of confirm_report.py and
 nothing else.
 
-Writes, in the Taylor & Francis Interact layout of the manuscript (as the archived final_tables.py: a `table` float
+Writes, in the Taylor & Francis Interact layout of the manuscript (a `table` float
 whose caption and tabular go through \\tbl{caption}{tabular}, \\label after it):
 
   policies.tex   Table 3 of the paper: completed lots per day, mean (SD), the scenarios side by side; each rule
                  next to the table fitted from its records and the gain over the rule (bold: more on every
                  seed; ** paired t p < 0.01; dagger: more than the remaining-time threshold at paired t p < 0.05),
-                 then the remaining-time threshold tuned in the simulator, BC and PPO
+                 then the remaining-time threshold tuned in the testbed, BC and PPO
   numbers.tex    one \\newcommand per number the text may quote: \\num<Scenario><policy><Quantity> and
                  \\num<Scenario><policyA><PolicyB><Quantity> for "A minus B" (e.g. \\numHVLMlearnerMbsPct),
-                 followed by the macros the present text of paper/sections uses
+                 followed by the macros the text of paper/main.tex uses
 
 and prints the same content as plain text.
 
   python confirm_tables.py                              # final/confirm/results.json -> paper/tables/
   python confirm_tables.py --results X.json --out DIR   # any other results file (an explicit --out is
-                                                        # required for a development or unfinished one)
+                                                        # required for a --dev or unfinished one)
 """
 import argparse
 import json
@@ -34,19 +34,19 @@ NA3 = r"\multicolumn{3}{c}{--}"
 BLANK3 = r"\multicolumn{3}{c}{}"
 HOLE = r"\textbf{??}"                 # a number the results file does not hold yet
 
-# the policies of Table 1, grouped by where their levels come from; the heading of each group is printed
+# the policies of Table 3, grouped by where their levels come from; the heading of each group is printed
 # as a row (edit the wording here)
 GROUPS = (("Rules", ("default", "logging", "timeout", "mbs", "nach")),
-          ("Threshold tuned in the simulator", ("clock",)),
-          ("Trained in the simulator", ("bc", "ppo")),
+          ("Threshold tuned in the testbed", ("clock",)),
+          ("Trained in the testbed", ("bc", "ppo")),
           ("Table fitted from the records of", ("tbl_timeout", "tbl_mbs", "tbl_nach", "learner", "resid")))
-# the names of the policies in the tables and figures (2026-10-15): no parameter values, which Table 2 of the
+# the names of the policies in the tables and figures: no parameter values, which Table 2 of the
 # paper holds, and the full-batch rule with 2% of its free decisions started at random under the name the
 # paper defines once, "full batch with random starts"
 SHORT_LABEL = {"default": "full batch", "logging": "full batch, random starts", "timeout": "timeout",
                "mbs": "minimum batch size", "nach": "NACH", "clock": "remaining-time threshold",
                "bc": "BC", "ppo": "PPO",
-               "learner": "full batch, random starts", "resid": "the same, residual only",
+               "learner": "full batch, random starts", "resid": "the same, one-axis table",
                "tbl_timeout": "timeout", "tbl_mbs": "minimum batch size", "tbl_nach": "NACH"}
 # row labels inside the last group: the rule whose records the table was fitted from
 ROW = {"tbl_timeout": "timeout", "tbl_mbs": "minimum batch size", "tbl_nach": "NACH"}
@@ -204,7 +204,7 @@ def n_seeds(res):
     return len(res["HVLM"]["seeds"])
 
 
-# ---------------------------------------------------------------- Table 1: the policies
+# ---------------------------------------------------------------- Table 3: the policies
 
 NETWORK_NOTE = ("For the network policies the scrapped lots are the total, and the under-full loads are counted "
                 "over all 360 days of the run.")
@@ -230,10 +230,10 @@ def scrap_cells(p, notes):
 
 def policies_table(res, comment=""):
     """Table 3: each rule next to the table fitted from its records, the scenarios side by side, then the policies
-    tuned or trained in the simulator. Bold: the table completes more lots than its rule on every seed. Gain: the
+    tuned or trained in the testbed. Bold: the table completes more lots than its rule on every seed. Gain: the
     paired difference as a percentage of the rule, with ** at paired t p < 0.01. Dagger: more lots than the control
-    limit at paired t p < 0.05. The random-starts row prints no gain, so that the 5-10% of the rules' own records
-    stays the headline (Section 5.2 states the comparison with the full-batch rule)."""
+    limit at paired t p < 0.05. The random-starts row prints no gain (Section 5.2 states the comparison with the
+    full-batch rule)."""
     N = n_seeds(res)
     pairs = [("timeout", "tbl_timeout"), ("mbs", "tbl_mbs"), ("nach", "tbl_nach"), None,
              ("default", None), ("logging", "learner")]
@@ -261,7 +261,7 @@ def policies_table(res, comment=""):
         rule, table = item
         rows.append(" & ".join([SHORT_LABEL[rule]] + cells("HVLM", rule, table) + cells("LVHM", rule, table)) + r" \\")
     rows.append(r"\midrule")
-    rows.append(r"\multicolumn{7}{@{}l}{\emph{Tuned or trained in the simulator}} \\")
+    rows.append(r"\multicolumn{7}{@{}l}{\emph{Tuned or trained in the testbed}} \\")
     for ref in ("clock", "bc", "ppo"):
         rows.append(" & ".join([SHORT_LABEL[ref]] + cells("HVLM", ref, None) + cells("LVHM", ref, None)) + r" \\")
     body = "\n".join("    " + r for r in rows)
@@ -270,8 +270,8 @@ def policies_table(res, comment=""):
     & Policy & Fitted table & Gain (\%) & Policy & Fitted table & Gain (\%) \\"""
     cap_ = rf"Completed lots per day, mean (SD) over the {N} seeds."
     note = (r"  \tabnote{Fitted table: the table fitted from the records of the policy in its row. Bold: more lots than "
-            r"that policy on every seed. Paired $t$-test: $^{**}p < 0.01$ for the gain over that policy, "
-            r"$^{\dagger}p < 0.05$ for more lots than the remaining-time threshold.}" + "\n")
+            r"that policy on every seed. Paired $t$-test: $^{**}p < 0.01$ for the gain over that policy; "
+            r"$^{\dagger}p < 0.05$, unadjusted, for more lots than the remaining-time threshold.}" + "\n")
     return interact_table(cap_, "tab:policies", r"@{}l ccc ccc@{}", head, body, "4pt", note, comment)
 
 
@@ -379,8 +379,8 @@ def systematic(res, M):
 
 
 def prose(res, M):
-    """The macros the text of paper/sections uses (the sections of 2026-10-03), from the same results. Each is
-    one reading of the systematic numbers; when the text changes, change it here."""
+    """The macros the text of paper/main.tex uses, from the same results. Each is one reading of the
+    systematic numbers; when the text changes, change it here."""
     RULES = ("timeout", "mbs", "nach")
 
     def c(fab, key, field="mean", sec=None):
@@ -582,7 +582,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--results", default=RESULTS, help="a results file of confirm_report.py")
     ap.add_argument("--out", default=None, help="directory for policies.tex and numbers.tex (default: paper/tables)")
-    ap.add_argument("--no-prose-macros", action="store_true", help="numbers.tex without the macros of the present text")
+    ap.add_argument("--no-prose-macros", action="store_true", help="numbers.tex without the macros of the manuscript's text")
     a = ap.parse_args()
     if not os.path.exists(a.results):
         sys.exit(f"no results file {a.results}: run confirm_report.py first (while the block runs it writes "

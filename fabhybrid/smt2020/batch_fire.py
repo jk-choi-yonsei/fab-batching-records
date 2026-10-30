@@ -1,13 +1,12 @@
 """Should an under-full furnace run anyway, and should a queue-time clock decide it?
 
-Measured 2026-09-04 (`batch_probe.py`, now archive/2026-09-closed-axes/, 180 d, measured
-from day 90): upstream refuses any batch group short of `batch_max` (greedy.py:50) and
-idles the tool. That refusal fires at **83-86% of all batch decision points** on both
-datasets -- 142,261 times on HVLM and 125,976 on LVHM in a 90-day window. At a refusal the
-fullest group already holds 3 of 5-6 lots a third of the time and 4 a quarter of
-the time, and **45% (HVLM) / 42% (LVHM) of refusals have a waiting lot carrying a
-live queue-time clock**, the tightest of them a median 2.4 h (HVLM) / 0.7 h
-(LVHM) from violating.
+Measured over 180 d from day 90: upstream refuses any batch group short of `batch_max`
+(greedy.py:50) and idles the tool. That refusal fires at **83-86% of all batch decision
+points** on both datasets -- 142,261 times on HVLM and 125,976 on LVHM in a 90-day window.
+At a refusal the fullest group already holds 3 of 5-6 lots a third of the time and 4 a
+quarter of the time, and **45% (HVLM) / 42% (LVHM) of refusals have a waiting lot carrying
+a live queue-time clock**, the tightest of them a median 2.4 h (HVLM) / 0.7 h (LVHM) from
+violating.
 
 So the batch rule and the residency constraint are in direct conflict, and
 nothing in the literature arbitrates it: the classical batching rules (MBS,
@@ -18,8 +17,8 @@ batch formation. This measures the arbitration.
 Three arms, one decision changed -- what to do when the best group is under-full:
 
   full      upstream: defer, idle the tool. The baseline.
-  mbs:k     fire it if it holds at least k lots. The classical rule, and the
-            baseline any reviewer will demand. k = batch_max reproduces `full`.
+  mbs:k     fire it if it holds at least k lots. The classical rule.
+            k = batch_max reproduces `full`.
   clock:h   fire it if some lot waiting at this tool holds a live clock with
             less than h hours left. ONE coefficient, and provably inert at
             h = 0: the trigger set {0 <= margin < 0} is empty, so the arm is
@@ -62,7 +61,7 @@ SLACK_FROM = [0.0]  # a one-element box so the decision loop can set the window
 LEVEL = [None]
 RNG = [None]    # seeded per run in run(); only the `explore` arm draws from it
 # PER-STEP coefficients for the clock arm: {"<family>|<step_name>": hours}. Empty
-# means the single global coefficient this project has always used. The rule reads
+# means one global coefficient, the one --arm gives. The rule reads
 # ONE number for all 19 diffusion steps, and only 5 of them ever fire an under-full
 # load, so whether one number is the right shape is a question the fab can answer.
 HMAP = {}      # the fitted level artefact for the `level` arm, likewise
@@ -111,24 +110,18 @@ def choose(env, kind, coef):
     if group_is_full(g0):
         # Upstream runs a full load unconditionally and so does every arm in
         # this family; the one-station theorem says that is right, since a full
-        # load earns B - kappa > 0 for every kappa the regime admits and
-        # `kappa_ladder` (archive/2026-10-closed-lines/theory) finds no exception in any cell. Only a GATED level arm
-        # may hold one, and only because `chain_model` shows that is exactly
-        # what the optimum does when the frame the cohort lands in cannot
-        # absorb it -- 442 states on the calibrated cell, carrying most of a
-        # gap worth 6.90% of throughput. Every other arm returns here bit for
-        # bit as before.
+        # load earns B - kappa > 0 for every kappa the regime admits and no cell
+        # contradicts it. Only a GATED level arm may hold one, and only because
+        # the chain model shows that is exactly what the optimum does when the
+        # frame the cohort lands in cannot absorb it -- 442 states on the
+        # calibrated cell, carrying most of a gap worth 6.90% of throughput.
+        # Every other arm returns here.
         lv = LEVEL[0]
         if kind != "level" or lv is None or not lv.gated:
             return 0
         # Holding a load must not idle a tool that has other work. Try each FULL
         # candidate in the rule's own order and take the first the gate lets
-        # through; the tool only idles when the gate blocks every one. Without
-        # this the first fab reading of the gate lost 1.07 completions/day while
-        # blocking 0.54% of full loads -- and the blocked loads were measured to
-        # be ones it was SAFE to hold (own_res above 0.42, or no live clock at
-        # all, which is 64.6% of full-load decisions), so the cost was the idle
-        # tool rather than lots dying in the held load.
+        # through; the tool only idles when the gate blocks every one.
         for i, g in enumerate(groups):
             if group_is_full(g) and lv.decide(env, g, now, None, True):
                 return i
@@ -196,10 +189,9 @@ def choose(env, kind, coef):
             return best_i
         return len(groups)
     if kind == "nxtrule":
-        # DIAGNOSTIC ONLY (2026-09-22), never a paper comparator: the isolated-station
-        # optimum re-expressed at a dispatcher's decision epochs -- fire iff the tightest
-        # clock would run out before the next lot for this step arrives (no arrival on the
-        # way counts as never). Read off the learner's table; stays in the log.
+        # the isolated-station optimum re-expressed at a dispatcher's decision epochs --
+        # fire iff the tightest clock would run out before the next lot for this step
+        # arrives (no arrival on the way counts as never). Read off the learner's table.
         if tightest is None or tightest < 0.0:
             return len(groups)
         nxt_ = env.next_arrival(step.family, step.step_name)
@@ -212,8 +204,8 @@ def choose(env, kind, coef):
         # THE LEARNED ARM. Same predicate, same trigger set, same reading of the
         # tool's tightest clock -- the threshold moves with the state, and (for
         # a gated artefact) the full load can be held. The FORM is not free:
-        # `kappa_ladder` counts 0 lower-set violations in 9,216-59,904 covering
-        # pairs at every kappa, and `chain_model` puts the value of choosing
+        # the one-station optimum has 0 lower-set violations in 9,216-59,904
+        # covering pairs at every kappa, and the chain model puts the value of choosing
         # WHICH load to fire at -4.4e-16, so a policy allowed to change either
         # would be searching a space already known to be empty.
         lv = LEVEL[0]
@@ -225,8 +217,7 @@ def choose(env, kind, coef):
     # eqs. 2-4) restricted to the next arrival: waiting D = t1 - t0 for it costs
     # the q lots already here q*D and saves the arriving lot T - D (it would
     # otherwise queue until this run ends), so wait iff (T - D) - q*D > 0, i.e.
-    # (q + 1)*D < T; ties start now. Verified against the printed equations
-    # 2026-09-22; before that the code omitted the arriving lot's own D.
+    # (q + 1)*D < T; ties start now.
     nxt = env.next_arrival(step.family, step.step_name)
     S = step.processing_time.m
     if kind == "nach_dl" and tightest is not None and (nxt is None or nxt - now >= tightest):
@@ -241,7 +232,7 @@ def run(a):
     t_wall = time.time()
     LEVEL[0] = None
     # the exploration arm's own stream, seeded from the run seed so it reproduces;
-    # nothing else reads it, so every other arm stays bit-identical to before
+    # nothing else reads it, so no other arm's run depends on it
     RNG[0] = np.random.default_rng(int(a.seed) * 7919 + 17)
     if kind == "level" and getattr(a, "theta", None):
         import level as level_mod
@@ -281,7 +272,7 @@ def run(a):
             scenarios.compress_release(env.instance, a.scale)
         env.rebuild_deadlines()
 
-    vman = []                       # instance variants (variants.py) are archived; no run of the paper used one
+    vman = []                       # no instance variant is applied; no run of the paper uses one
 
     inst, t0 = env.instance, env.t0
     n_queued0 = len(inst.dispatchable_lots)
@@ -404,19 +395,13 @@ def run(a):
             r[2] += m.bred_time - b0
             r[3] += m.setuped_time - s0
             r[4] += 1
-        # NB: this loop variable used to be called `n`, which SHADOWED the
-        # `n, v = len(seg), ...` bound above and reached the output as
-        # "resolved" -- every batch_block artefact reports resolved = 2 (the
-        # last family's machine count) and violation_rate_pct = 100*v/2 in the
-        # tens of thousands. The KPI path was never affected; only these two
-        # reported fields were. Renamed 2026-09-15.
         for fam, (u, p, b, stp, n_mach) in agg.items():
             avail = span * n_mach - p - b
             fam_util[fam] = {
                 "n": n_mach,
                 "util_pct": round(100.0 * u / avail, 2) if avail > 0 else None,
-                "down_pct": round(100.0 * (p + b) / (span * n), 2),
-                "setup_pct": round(100.0 * stp / (span * n), 2)}
+                "down_pct": round(100.0 * (p + b) / (span * n_mach), 2),
+                "setup_pct": round(100.0 * stp / (span * n_mach), 2)}
     # every batch load of the window, including the full ones the auto-commit
     # path takes without a decision (which the fill above cannot see)
     ledger, t_lots, t_cap, t_part, t_loads = {}, 0, 0, 0, 0
@@ -498,14 +483,14 @@ def main():
                     help="level.py artefact for the `level` arm (JSON); without it the "
                          "arm is exactly clock:h0")
     ap.add_argument("--eps", type=float, default=0.0,
-                    help="ROUND-2 EXPLORATION for a `table` artefact: flip its fire/wait call with "
+                    help="EXPLORATION for a `table` artefact: flip its fire/wait call with "
                          "this probability at under-full live-clock decisions (own seeded RNG). "
                          "0 = the table itself. Only meaningful with --theta.")
     ap.add_argument("--eps-fw", type=float, default=0.0, help="asymmetric exploration: P(flip a table FIRE to wait)")
     ap.add_argument("--eps-wf", type=float, default=0.0, help="asymmetric exploration: P(flip a table WAIT to fire)")
     ap.add_argument("--nxt-noise-min", type=float, default=0.0,
                     help="level arm: Gaussian error (SD, minutes) added to the time to the next arrival it reads "
-                         "(deployment-time error option, off by default; not used in the final runs); own random stream")
+                         "(deployment-time error option, off by default; not used in the paper's runs); own random stream")
     ap.add_argument("--nxt-missing", type=float, default=0.0,
                     help="level arm: probability that no arrival estimate is available at a decision (read as none due)")
     ap.add_argument("--temp", type=float, default=1.0,
@@ -517,9 +502,7 @@ def main():
                     help="JSON {\"family|step\": hours} of per-step clock coefficients; unlisted steps keep --arm's")
     ap.add_argument("--out", default=".")
     a = ap.parse_args()
-    # a temperature with nothing to apply it to would be a silent no-op, and this
-    # repository has paid for one of those already (the rescue patch that anchored
-    # on a nonexistent line and let twelve runs execute at the module default)
+    # a temperature with nothing to apply it to would be a silent no-op
     assert a.temp == 1.0 or a.theta, "--temp only means something with --theta"
     assert a.eps == 0.0 or a.theta, "--eps only means something with --theta"
     if a.hmap:
@@ -550,7 +533,7 @@ def main():
     if getattr(a, "eps", 0.0) > 0.0:
         tag += "_" + f"eps{a.eps:g}".replace(".", "p")      # must reach the filename (run_queue skips on existence)
     if getattr(a, "temp", 1.0) != 1.0:
-        # like the variant, the hardness MUST reach the filename: run_queue skips
+        # the hardness MUST reach the filename: run_queue skips
         # on existence, so two temperatures sharing a name would be skipped
         tag += "_" + f"T{a.temp:g}".replace(".", "p")
     if getattr(a, "hmap", None):

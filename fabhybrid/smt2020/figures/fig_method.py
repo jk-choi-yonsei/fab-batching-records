@@ -1,4 +1,4 @@
-"""Figure 3: the proposed method, drawn as the author's own figures are: the things themselves, named.
+"""Figure 3: the proposed method, drawn as the things themselves, named.
 
 The records of a tool family as a strip of decisions in time, with one transition bracketed between
 two consecutive decisions; value iteration at the price beta; the table over (tightest residual,
@@ -21,8 +21,8 @@ sys.path.insert(0, HERE)
 import house_style  # noqa: E402
 
 WIDTH = 5.67                      # text width of the Interact layout, inches
-FS = 10.0                         # every text of the figure, near the body's 11 pt (the author, 2026-10-16)
-INK = "#1f3b57"                   # the navy outline of the author's figures
+FS = 10.0                         # every text of the figure, near the body's 11 pt
+INK = "#1f3b57"                   # the navy outline
 GREY = "#8a8f98"
 RECORD = "#ebebeb"
 RECORD_EDGE = "#3a3a3a"

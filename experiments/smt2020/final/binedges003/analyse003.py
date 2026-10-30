@@ -1,4 +1,4 @@
-"""TASK A1 steps 2, 4, 5: check the ref fits against the paper artefacts, read every table's start
+"""Check the ref fits against the paper artefacts, read every table's start
 limits per u column and its monotonicity violations, locate where each variant's disagreement with
 the reference arises, and write summary.json / summary.md.
 
@@ -140,7 +140,7 @@ def main():
     summary = {"price": 0.003, "estimator": "fit_q.py --chain family --lam 0.003 --backoff --from-day 90 --fold fill",
                "variants": {k: {"tightest": v[0], "nxt": v[1]} for k, v in VAR_EDGES.items()}, "ref_check": {},
                "per_fab_kind": {}, "walltime": {}}
-    md = ["# Bin-edge variants at beta 0.003, four sets of records, both scenarios (TASK A1, 2026-10-09)", "",
+    md = ["# Bin-edge variants at beta 0.003, four sets of records, both scenarios", "",
           "Estimator: `fit_q.py --chain family --lam 0.003 --backoff --from-day 90 --fold fill` (n0 = K0 = 10, gamma 0.9/h),",
           "exactly as `betarx/family/{FAB}_{KIND}_b0p003_t1.json`; only `--edges-tightest` / `--edges-nxt` change.",
           "Records: `collect/{FAB}_{STEM}_s{100,101}.json`, days >= 90. Agreement = share of the KIND's own free decisions",

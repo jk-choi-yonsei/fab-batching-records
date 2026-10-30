@@ -15,18 +15,13 @@ Two of their results shape everything downstream.
 
 QTCR halves violations for free. On their dataset 2, violations fall from
 17.5% under a CQT-blind rule to 9.4%, while cycle time goes 37.7 -> 37.5 days
-and on-time 92.7% -> 93.4%. This project measured a fixed-rate trade instead --
-roughly 3.2 points of on-time per point of violations -- using a binary
-urgent/not-urgent flag in the priority tuple. A binary flag orders nothing
-within the urgent set, and that is most likely what was being measured.
+and on-time 92.7% -> 93.4%.
 
 Stopping is catastrophic without CQT-aware dispatching and harmless with it.
 Under their medium threshold setting a CQT-blind dispatcher collapses to 0.5%
 on-time with cycle time 47.0 days, while QTCR holds 93.8% at 37.7 days. Their
 explanation is that prioritising constrained lots gives "an accelerated
-resolution of stopping situations" -- the held lots get cleared. This project
-put a stopping directive on top of a CQT-blind CR rule and measured it making
-violations worse; that is the same combination, in the same direction.
+resolution of stopping situations" -- the held lots get cleared.
 
 QTS, their second rule, is not implemented. It needs per-step flow factors
 "determined from long simulation runs" to split the queue time across the
@@ -164,7 +159,7 @@ def cqt_first_ptuple(base_fcn, monitor, at=2):
     at this operating point, and its cycle time is what that removal costs at
     the extreme.
 
-    Two constructions were tried and discarded on the way to this one, both on
+    Two other constructions fall short, both on
     LVHM at 0.98, 25 days, against QTCR's 3.05% violations. Ordering the
     constrained lots by raw remaining margin gives 5.53%: sorting on margin
     alone puts the lots already beyond saving at the very front, where they

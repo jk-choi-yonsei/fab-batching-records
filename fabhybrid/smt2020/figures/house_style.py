@@ -47,8 +47,8 @@ def apply(base=9.0, scale=1.0):
 
 
 def serif():
-    """The face of the author's own figures (2026-10-15): the body's Times inside the figure too, with STIX
-    for the mathematics. Figures 1 and 3 were drawn this way and accepted; the data figures follow."""
+    """The body's Times inside the figure too, with STIX for the mathematics: the face of Figures 1 and 3,
+    which the data figures share."""
     plt.rcParams.update({"font.family": "serif",
                          "font.serif": ["Times New Roman", "Times", "Nimbus Roman", "DejaVu Serif"],
                          "mathtext.fontset": "stix"})

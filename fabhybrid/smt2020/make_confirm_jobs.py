@@ -55,9 +55,7 @@ PINNED = {
     f"{FAM}/HVLM_mbs3_b0p003_t1.json": "c59747a7e4d3bf6b", f"{FAM}/LVHM_mbs3_b0p003_t1.json": "421fbc63bd96b223",
     f"{FAM}/HVLM_nach_b0p003_t1.json": "20ab0a923e12b817", f"{FAM}/LVHM_nach_b0p003_t1.json": "13a1cecb30b1553c",
     f"{B}/HVLM_b0p0016_t1rx.json": "b666a7a797065f45",
-    # BC and PPO retrained 2026-10-19 without the elapsed-time inputs (runs/batch_<fab>_qtcr2); the 2026-10-10 weights
-    # (batch_<fab>_qtcr: 4f5bdf82ed67be40, 3527d4beb80c7c5c, 9a6e4a1dad87e7ce, 442da61888e2bdc0, 07abc5aa3f8ca0d2,
-    # 96f34c5a7a389091) are evaluated in final/confirm/report_bcppo_2026-10-10
+    # BC and PPO, without the elapsed-time inputs (runs/batch_<fab>_qtcr2)
     f"{RUNS}/batch_HVLM_qtcr2/weights_bc.pt": "ad8cb9396859177b", f"{RUNS}/batch_LVHM_qtcr2/weights_bc.pt": "a83764b9676e5348",
     f"{RUNS}/batch_HVLM_qtcr2/weights_best.pt": "e8aa8850918423a1", f"{RUNS}/batch_LVHM_qtcr2/weights_best.pt": "8a848afdd31176ec",
     f"{RUNS}/batch_HVLM_qtcr2/norm.json": "ffa2b9b9f320a267", f"{RUNS}/batch_LVHM_qtcr2/norm.json": "f814f2965ca5bac7",

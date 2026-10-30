@@ -3,9 +3,8 @@
 Decision points are the batch tools' only (FabEnv batch_only): which candidate
 group runs on a freed batch machine, or wait. Reward is the scrap game's own
 objective (FabEnv reward='yield': +w per completion, -w per scrapped lot),
-credited per lot to the decisions that arbitrated it -- the lot-scoped
-estimator of the whole-fab trainer (archive/deadtime-final/legacy/fabhybrid-v1/smt2020/train_l1.py),
-with point charges in place of tardiness intervals:
+credited per lot to the decisions that arbitrated it -- a lot-scoped
+estimator with point charges in place of tardiness intervals:
 
     A_t = sum over lots l in the candidate set C_t of
           [ gamma_day^((t_l - tau_t)/day) * v_l * 1(tau_t < t_l <= tau_t + H) - V_lot(l | s_t) ]
@@ -65,7 +64,8 @@ class BatchPolicy(nn.Module):
                                     nn.Linear(128, 64), nn.Tanh(), nn.Linear(64, 1))
 
     def load_compat(self, sd):
-        """Load weights saved before the value head had its own embedding."""
+        """Load weights; a state dict without the value head's own embedding (emb_v) starts it as a
+        copy of the actor's."""
         missing = self.load_state_dict(sd, strict=False)
         if "emb_v.weight" not in sd:
             self.emb_v.weight.data.copy_(self.emb.weight.data)
@@ -163,8 +163,7 @@ def run_window(policy, norm, env, snapshot, seed, collect=None, keep_prob=1.0,
 
 def make_env(cfg, days=None):
     # cqt_rule: the queue-time critical ratio of the evaluation runs (eval_batch --cqt-rule). The
-    # 2026-09-07 weights were trained with the default "none" and evaluated with "qtcr"; the
-    # 2026-10 retraining passes qtcr here so that the windows sequence lots as the block does.
+    # paper's BC and PPO pass qtcr here so that the windows sequence lots as the block does.
     return FabEnv(dataset=cfg.dataset, seed=cfg.seed, episode_days=days or cfg.days,
                   horizon_days=int((days or cfg.days) + 2), rule="cr", scrap=True,
                   reward="yield", batch_only=True, cqt_rule=getattr(cfg, "cqt_rule", "none"))
@@ -303,8 +302,7 @@ def phase_worker(cfg):
 
 # ----------------------------------------------------------------- credit ---
 class YChunk:
-    """One worker window unpacked for the update (the archived whole-fab trainer's Chunk with point
-    charges instead of tardy intervals)."""
+    """One worker window unpacked for the update, with point charges instead of tardy intervals."""
 
     def __init__(self, path):
         z = np.load(path)

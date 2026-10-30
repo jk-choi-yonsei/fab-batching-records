@@ -14,8 +14,8 @@ agree_with_learner; policies[...]: label). The tables do not depend on the evalu
       --out ../../paper/figures/tables.pdf
 
   --variant v1      binary maps                                                  (default)
-  --variant v2      the learner's map coloured by Q(start) - Q(wait), as the archived fig_table.py did; the
-                    other maps binary in the two hues of that scale
+  --variant v2      the learner's map coloured by Q(start) - Q(wait); the other maps binary in the two hues
+                    of that scale
   --mark hatch|dot  how a cell that takes the residual-only entry is marked      (default hatch)
   --learner-line    the boundary of the learner's start region drawn on every map
   --yranges         the residual bins labelled as bins (0-0.25, ..., >=4), not by their edges; the
@@ -45,7 +45,7 @@ EXP = os.path.join(HERE, "..", "..", "..", "experiments", "smt2020")
 FABS = ["HVLM", "LVHM"]
 COLS = ["timeout", "mbs", "nach", "default"]      # records[...] keys; "default": the full-batch rule, random starts
 WIDTH = 5.67                      # text width of the Interact layout, inches
-FS = 10.0                         # every text of the figure, near the body's 11 pt (the author, 2026-10-16)
+FS = 10.0                         # every text of the figure, near the body's 11 pt
 INK = "#111111"
 
 # start, wait, and the mark on each for a cell that takes the residual-only entry
@@ -89,7 +89,7 @@ def edge_ticks(edges):
 
 
 def range_ticks(edges):
-    """ticks at the cell centres, labelled with the bin as fig_table.py did (0–0.25, ..., >=4)"""
+    """ticks at the cell centres, labelled with the bin (0–0.25, ..., >=4)"""
     e = edges
     return np.arange(len(e) - 1), [f"{e[j]:g}–{e[j + 1]:g}" if e[j + 1] < 24 else f"$\\geq${e[j]:g}"
                                    for j in range(len(e) - 1)]
@@ -209,7 +209,7 @@ def build(res, variant, mark, learner_line, yranges=False):
                  va="center", fontsize=FS, color=INK)
         y -= XTICK + NOTE + (ROWGAP if r + 1 < len(FABS) else 0)
     # one label for both rows of maps, as the label of the time to the next arrival is one for all columns
-    fig.text(fx(PAD + YLAB / 2), fy((y_maps_top + y_maps_bottom) / 2), "tightest residual $m_{\\min}$ (h)",
+    fig.text(fx(PAD + YLAB / 2), fy((y_maps_top + y_maps_bottom) / 2), "shortest remaining time $m_{\\min}$ (h)",
              rotation=90, ha="center", va="center", fontsize=FS, color=INK)
 
     y -= XLAB
@@ -223,10 +223,10 @@ def build(res, variant, mark, learner_line, yranges=False):
                Patch(facecolor=colours["wait"], edgecolor="none", label="wait")]
     if mark == "dot":
         handles.append(Line2D([], [], marker="o", ms=2.6, color="#555555", mec="none", lw=0,
-                              label="entry of the residual-only table"))
+                              label="entry of the one-axis table"))
     else:
         handles.append(Patch(facecolor="white", edgecolor="#555555", hatch="/////", lw=0.5,
-                             label="entry of the residual-only table"))
+                             label="entry of the one-axis table"))
     if learner_line and variant != "v2":
         handles.append(Line2D([], [], color=LINE, lw=1.3, label="start region of the table in the last column"))
     fig.legend(handles=handles, loc="center", bbox_to_anchor=(fx(xm), fy(y + LEGEND / 2)), ncol=len(handles),
@@ -277,7 +277,7 @@ def main():
     ap.add_argument("--learner-line", action="store_true",
                     help="the boundary of the learner's start region on every map")
     ap.add_argument("--yranges", action="store_true",
-                    help="label the residual bins as fig_table.py did (0-0.25, ..., >=4) instead of their edges")
+                    help="label the residual bins as bins (0-0.25, ..., >=4) instead of by their edges")
     a = ap.parse_args()
     res = json.load(open(a.results, encoding="utf-8"))
     fig = build(res, a.variant, a.mark, a.learner_line, a.yranges)

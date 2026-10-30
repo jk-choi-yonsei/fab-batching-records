@@ -1,13 +1,13 @@
 """Figure 5: the gain of each fitted table in completed lots per day, paired by seed, both scenarios.
 
-Rows, in two groups: the table fitted from a rule's own records over that rule, and the fitted tables over the
-remaining-time threshold tuned in the simulator (the last row, the table of the full-batch records with random
-starts). A row shows the per-seed differences (small dots; the vertical offset is a fixed function of the seed's position, so a seed sits at the
+Rows, in three groups: the table fitted from a rule's own records over that rule; the fitted tables over the
+remaining-time threshold tuned in the testbed (the last two rows, the table of the full-batch records with
+random starts and the residual-only table of the same records); and the first of these two over the second. A row shows the per-seed differences (small dots; the vertical offset is a fixed function of the seed's position, so a seed sits at the
 same height in every row), their mean with its 95% interval, and at the right the number of seeds
 on which the difference is positive, out of the untied seeds.
 
 Everything is read from the results file of confirm_report.py (comparisons[...]: mean, lo, hi, wins,
-losses, per_seed; policies[...]: label), so the same call serves the development record and the block.
+losses, per_seed; policies[...]: label), so the same call serves a --dev results file and the block.
 
   python figures/fig_diffs.py --results ../../experiments/smt2020/final/confirm/results.json \
       --out ../../paper/figures/diffs.pdf
@@ -41,16 +41,18 @@ from confirm_tables import SHORT_LABEL  # noqa: E402    the policies' names, the
 EXP = os.path.join(HERE, "..", "..", "..", "experiments", "smt2020")
 FABS = ["HVLM", "LVHM"]
 WIDTH = 5.67                      # text width of the Interact layout, inches
-FS = 10.0                         # every text of the figure, near the body's 11 pt (the author, 2026-10-16)
+FS = 10.0                         # every text of the figure, near the body's 11 pt
 
 # (heading, [(comparison key, policy whose label names the row), ...]); a group of one row is
 # labelled by its heading alone. A row is named by the rule whose records the table was fitted from.
 GROUPS = [
     ("Gain over the rule that made the records",
      [("tbl_timeout-timeout", "timeout"), ("tbl_mbs-mbs", "mbs"), ("tbl_nach-nach", "nach")]),
-    ("Gain over the remaining-time threshold tuned in the simulator",
+    ("Gain over the remaining-time threshold tuned in the testbed",
      [("tbl_timeout-clock", "timeout"), ("tbl_mbs-clock", "mbs"), ("tbl_nach-clock", "nach"),
-      ("learner-clock", "logging")]),
+      ("learner-clock", "logging"), ("resid-clock", "resid")]),
+    ("Gain over the one-axis table",
+     [("learner-resid", "logging")]),
 ]
 
 INK = "#111111"

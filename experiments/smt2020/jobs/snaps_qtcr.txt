@@ -1,4 +1,4 @@
-# 2026-10-10: warm-ups for the BC/PPO retraining with the queue-time critical ratio (the 2026-09 snapshots had cqt_rule none)
+# warm-up snapshots for the BC/PPO training, with the queue-time critical ratio
 python scrap_snap.py --dataset HVLM --scale 0.98 --seed 0 --days 90 --window 60 --cqt-rule qtcr --out ../../experiments/smt2020/scrap_snaps/snap_HVLM_r0.98_qtcr_s0.pkl.gz  ->  ../../experiments/smt2020/scrap_snaps/snap_HVLM_r0.98_qtcr_s0.pkl.gz
 python scrap_snap.py --dataset HVLM --scale 0.98 --seed 1 --days 90 --window 60 --cqt-rule qtcr --out ../../experiments/smt2020/scrap_snaps/snap_HVLM_r0.98_qtcr_s1.pkl.gz  ->  ../../experiments/smt2020/scrap_snaps/snap_HVLM_r0.98_qtcr_s1.pkl.gz
 python scrap_snap.py --dataset HVLM --scale 0.98 --seed 2 --days 90 --window 60 --cqt-rule qtcr --out ../../experiments/smt2020/scrap_snaps/snap_HVLM_r0.98_qtcr_s2.pkl.gz  ->  ../../experiments/smt2020/scrap_snaps/snap_HVLM_r0.98_qtcr_s2.pkl.gz

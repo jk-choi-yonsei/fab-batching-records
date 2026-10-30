@@ -6,8 +6,8 @@ the paper's tables, figures and text quote comes from that file; confirm_tables.
 
   python confirm_report.py                    # the block: final/confirm/report, seeds 64-95, the file
                                               # tags of jobs/confirm_report.txt -> final/confirm/results.json
-  python confirm_report.py --dev --out X.json # the development record: final/report, seeds 0-31, the
-                                              # closest development tags (other prices: HVLM 0.02, LVHM 0.01)
+  python confirm_report.py --dev --out X.json # final/report, seeds 0-31: the closest tags on those seeds
+                                              # (other prices: HVLM 0.02, LVHM 0.01)
   python confirm_report.py --dev --block-tables --out X.json
                                               # the same runs, but the facts of the fitted tables (records,
                                               # tables: maps, cells, agreement) read from the block's own
@@ -23,8 +23,7 @@ interim looks and asks that deviations are kept with the results.
 
 Tests are the protocol's: completed lots per day paired by seed, the 95% paired-t interval with the
 exact Student quantile for the n of the comparison, the exact two-sided sign test with ties dropped,
-Holm within the two declared families of three. The helpers follow final_report.py (archive/2026-10-closed-lines/stage-b-report; load, summary,
-paired, sign_p); nothing is imported from it.
+Holm within the two declared families of three.
 
 Layout of the results file: "meta", then one block per scenario ("HVLM", "LVHM") with
   seeds        the seeds of the block, in order
@@ -78,7 +77,7 @@ POLICIES = ("learner", "resid", "tbl_timeout", "tbl_mbs", "tbl_nach", "logging",
 SENS_FABS = ("HVLM",)                       # the records-price table is run on HVLM only
 ROLE = {"default": "rule", "mbs": "rule", "nach": "rule", "timeout": "rule",     # the rules a fab runs
         "clock": "tuned",                   # control limit, its level tuned by simulation
-        "bc": "trained", "ppo": "trained",  # trained in the simulator
+        "bc": "trained", "ppo": "trained",  # trained in the testbed
         "learner": "learner",               # fitted from records
         "resid": "ablation", "tbl_timeout": "records", "tbl_mbs": "records", "tbl_nach": "records",
         "logging": "logging", "sens": "sensitivity"}
@@ -289,8 +288,8 @@ def block_spec(jobfile, report, seeds):
 
 
 def dev_spec(report, seeds):
-    """The closest runs of the development record (seeds 0-31): the one-period tables at the prices of that
-    record (HVLM 0.02, LVHM 0.01), the residual-only table of its three-period fit, the rules, the control
+    """The closest runs on seeds 0-31 (final/report): the one-period tables at the prices of those runs
+    (HVLM 0.02, LVHM 0.01), the residual-only table of their three-period fit, the rules, the control
     limit, BC and PPO as in the block. The records-price row was not run on these seeds."""
     C = os.path.join(FINAL, "collect")
     spec = {}
@@ -310,7 +309,7 @@ def dev_spec(report, seeds):
 
 
 def load(files, fab, problems):
-    """{seed: the run's numbers} for the run files that exist (as final_report.load, one policy)"""
+    """{seed: the run's numbers} for the run files of one policy that exist"""
     out = {}
     for seed, p in files.items():
         if not os.path.exists(p):
@@ -340,8 +339,8 @@ def load(files, fab, problems):
                      # under-full loads started in days 87-360 per day of that window (the protocol's measure;
                      # eval_batch.py, which runs BC and PPO, does not write the window count)
                      "underfull_per_day": None if pw is None else pw / WINDOW_DAYS,
-                     # the decision loop's count over all 360 days: per day of the run, and over 273 as the
-                     # development tables printed it
+                     # the decision loop's count over all 360 days: per day of the run, and over the 273 days
+                     # of the window
                      "underfull_per_day_run": None if pr is None else pr / RUN_DAYS,
                      "underfull_per_day_dev": None if pr is None else pr / WINDOW_DAYS}
     return out
@@ -353,7 +352,7 @@ def _mean(v, seeds, key):
 
 
 def summary(v, seeds, role, label, tag):
-    """one policy over its seeds (as final_report.summary), with the per-seed values aligned with `seeds`"""
+    """one policy over its seeds, with the per-seed values aligned with `seeds`"""
     s = [x for x in seeds if x in v]
     c = np.array([v[x]["completed"] for x in s], float)
     out = {"n": len(s), "completed": float(c.mean()) if len(s) else None,
@@ -437,7 +436,7 @@ def table_facts(path):
 
 def agreement(facts, ref):
     """The share of the free decisions in the learner's records at which this table takes the learner's
-    action, by the learner's cell counts (final_report.records' agree_reversals_table1), and the number of
+    action, by the learner's cell counts, and the number of
     the learner's cells in which the action differs. A residual-only table is spread over the arrival bins."""
     f, r = np.array(facts["fire"]), np.array(ref["fire"])
     if facts["edges"]["tightest"] != ref["edges"]["tightest"]:
@@ -633,7 +632,7 @@ def git_head():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--dev", action="store_true", help="the development record (final/report, seeds 0-31)")
+    ap.add_argument("--dev", action="store_true", help="final/report, seeds 0-31, instead of the block")
     ap.add_argument("--report-dir", default=None, help="where the run files are (default: the mode's own directory)")
     ap.add_argument("--seeds", default=None, help="first-last, e.g. 64-95 (default: the mode's own seeds)")
     ap.add_argument("--out", default=None, help="results file (default: final/confirm/results.json, or "
@@ -641,7 +640,7 @@ def main():
                                                 "system's temporary directory)")
     ap.add_argument("--block-tables", action="store_true",
                     help="with --dev: read the facts of the fitted tables from the block's artefacts "
-                         "(jobs/confirm_report.txt); the runs stay the development record's")
+                         "(jobs/confirm_report.txt); the runs stay those of --dev")
     ap.add_argument("--agree-dumps", action="store_true",
                     help="also compute the agreement with the learner from the logged decisions (reads the dumps)")
     ap.add_argument("--quiet", action="store_true")
@@ -681,12 +680,12 @@ def main():
             "runs_expected": len(expected), "runs_present": present, "finished": bool(finished),
             "complete": present == len(expected), "deviations": [], "problems": []}
     if a.dev:
-        meta["notes"] = ["development record: seeds 0-31, tables fitted at the prices of that record "
+        meta["notes"] = ["seeds 0-31 (final/report), tables fitted at the prices of those runs "
                          "(HVLM 0.02, LVHM 0.01); resid is the residual-only table of the three-period fit; "
                          "the records-price row (sens) has no run on these seeds"]
         if a.block_tables:
             meta["notes"].append("the facts of the fitted tables (records, tables) are read from the block's "
-                                 "artefacts; the runs are those of the development record's own tables")
+                                 "artefacts; the runs are those of the --dev tables")
     log = os.path.join(CONFIRM, "interim_looks.log")
     if the_block:
         if not finished:

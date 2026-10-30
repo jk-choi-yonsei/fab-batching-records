@@ -69,8 +69,7 @@ class CQTMonitor:
         # opposite convention and let the lot finish its route. The choice is
         # not cosmetic: under scrapping a break costs a finished lot, so
         # violations and throughput stop being independent axes and the
-        # intervention trade-off becomes a single one. Default off so every
-        # earlier measurement still reproduces.
+        # intervention trade-off becomes a single one. Off by default.
         self.scrap = scrap
         self.scrapped = []
         self.on_scrap = None            # env callback: it owns the tardiness books

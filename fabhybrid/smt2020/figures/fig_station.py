@@ -7,16 +7,19 @@ announced_kappa0p1_*.json, as theory/announced_summary.py prints), the optimal a
 under-full decisions by (u, m) (the field actions_by_u): start in every state of the cell, wait in
 every state, or start in some and wait in others, by the rest of the state (the other residuals, the
 number of waiting lots, the later announcements). The map has the orientation of fig_tables.py:
-the residual downwards, the time to the next arrival across. The line bounds the cells with
-m <= min(u, L + 1), in which Proposition 1 proves that starting is optimal.
+the residual downwards, the time to the next arrival across. With --line, a line bounds the cells
+with m <= min(u, L + 1), in which Proposition 1 proves that starting is optimal. The manuscript's
+Figure 2 is the default: one instance without a cost of waiting, no line.
 
   python figures/fig_station.py --out ../../paper/figures/station.pdf
 
-  --variant v1      one instance (default: the centre of the solved grid), drawn at 0.6 of the text
-                    width: \\includegraphics[width=0.6\\textwidth] keeps its text at 8 pt
+  --variant v1      one instance (default: B=3, R=8, L=4, p=0.25, kappa=0.5, eta=0), the file cropped
+                    to the map and its legend: \\includegraphics{station} at its natural size keeps
+                    its text at 10 pt
   --variant v2      the same instance at several costs of waiting (--etas), side by side at the
                     text width
-  --instance ...    B=3,R=8,L=4,p=0.25,kappa=0.5,eta=0.05
+  --instance ...    B=3,R=8,L=4,p=0.25,kappa=0.5,eta=0
+  --line            draw the line m <= min(u, L + 1) and its legend entry
   --png FILE        where the PNG preview goes (default: paper/build/preview, as house_style.save)
 """
 import argparse
@@ -36,8 +39,8 @@ import house_style  # noqa: E402
 
 EXP = os.path.join(HERE, "..", "..", "..", "experiments", "smt2020")
 WIDTH = 5.67                      # text width of the Interact layout, inches
-ONE_FRAC = 0.6                    # v1 is drawn at this share of the text width
-FS = 10.0                         # every text of the figure, near the body's 11 pt (the author, 2026-10-16)
+ONE_FRAC = 0.6                    # v1 is drawn on a canvas of this share of the text width, then cropped
+FS = 10.0                         # every text of the figure, near the body's 11 pt
 INK = "#111111"
 
 # one hue, three steps: start in every state of the cell, in some, in none (as fig_tables.py, v1)
@@ -70,7 +73,7 @@ def pick(grid, spec):
     return hit[0]
 
 
-def draw(ax, inst, first):
+def draw(ax, inst, first, line=False):
     rows = inst["actions_by_u"]                           # u -> string over m = 1..R
     cols = list(rows)                                     # "1", ..., "L", "none"
     R, L = int(inst["R"]), int(inst["L"])
@@ -84,8 +87,9 @@ def draw(ax, inst, first):
         k = min(L + 1 if u == "none" else int(u), L + 1, R)
         xs += [j - 0.5, j + 0.5]
         ys += [k - 0.5, k - 0.5]
-    ax.plot(xs, ys, color="white", lw=2.6, solid_capstyle="butt", zorder=3)
-    ax.plot(xs, ys, color=LINE, lw=1.4, solid_capstyle="butt", zorder=4)
+    if line:
+        ax.plot(xs, ys, color="white", lw=2.6, solid_capstyle="butt", zorder=3)
+        ax.plot(xs, ys, color=LINE, lw=1.4, solid_capstyle="butt", zorder=4)
     ax.set_xlim(-0.5, len(cols) - 0.5)
     ax.set_ylim(R - 0.5, -0.5)
     ax.set_xticks(range(len(cols)))
@@ -100,15 +104,16 @@ def draw(ax, inst, first):
     return {a for u in cols for a in rows[u]}
 
 
-def handles(present, wrap):
+def handles(present, wrap, line=False):
     out = [Patch(facecolor=FACE[a], edgecolor="white" if a == "T" else "none", lw=0,
                  hatch="/////" if a == "T" else None, label=NAME[a] if wrap else NAME[a].replace("\n", " "))
            for a in ("F", "?", "T", "W") if a in present]
-    out.append(Line2D([], [], color=LINE, lw=1.4, label="$m \\leq \\min(u, L+1)$"))
+    if line:
+        out.append(Line2D([], [], color=LINE, lw=1.4, label="$m \\leq \\min(u, L+1)$"))
     return out
 
 
-def build(insts, titles):
+def build(insts, titles, line=False):
     house_style.apply(base=FS)
     house_style.serif()
     plt.rcParams.update({"axes.titlesize": FS, "xtick.labelsize": FS, "ytick.labelsize": FS,
@@ -121,7 +126,8 @@ def build(insts, titles):
     xlabel = "time to the next announced arrival $u$ (periods)"
     if one:                                               # the map with its legend at the right
         map_w, gap = ncol * 0.32, 0.0
-        width = ONE_FRAC * WIDTH                          # \includegraphics[width=0.6\textwidth] keeps 8 pt
+        width = ONE_FRAC * WIDTH                          # the canvas; the saved file is cropped to its content
+        plt.rcParams.update({"savefig.bbox": "tight", "savefig.pad_inches": 0.02})
         xlabel = xlabel.replace("announced ", "announced\n")   # one line is wider than the map
         xlab = XLAB + 0.13
         height = PAD + 0.04 + map_h + XTICK + xlab + PAD
@@ -138,21 +144,21 @@ def build(insts, titles):
     for c, inst in enumerate(insts):
         x = left + c * (map_w + gap)
         ax = fig.add_axes([fx(x), fy(y), fx(map_w), fy(map_h)])
-        present |= draw(ax, inst, c == 0)
+        present |= draw(ax, inst, c == 0, line)
         if not one:
             fig.text(fx(x + map_w / 2), fy(y + map_h + TITLE / 2), titles[c], ha="center", va="center",
                      fontsize=FS, color=INK)
-    fig.text(fx(PAD + YLAB / 2), fy(y + map_h / 2), "tightest residual $m$ (periods)", rotation=90,
+    fig.text(fx(PAD + YLAB / 2), fy(y + map_h / 2), "shortest remaining time $m_{\\min}$ (periods)", rotation=90,
              ha="center", va="center", fontsize=FS, color=INK)
     xm = left + (len(insts) * map_w + (len(insts) - 1) * gap) / 2
     fig.text(fx(xm), fy(y - XTICK - xlab / 2), xlabel, ha="center", va="center", fontsize=FS, color=INK,
              linespacing=1.15)
     if one:
-        fig.legend(handles=handles(present, True), loc="upper left",
+        fig.legend(handles=handles(present, True, line), loc="upper left",
                    bbox_to_anchor=(fx(left + map_w + 0.12), fy(y + map_h + 0.02)), frameon=False, fontsize=FS,
                    handlelength=1.3, handleheight=0.9, labelspacing=0.75, handletextpad=0.5, borderaxespad=0.0)
     else:
-        fig.legend(handles=handles(present, False), loc="center",
+        fig.legend(handles=handles(present, False, line), loc="center",
                    bbox_to_anchor=(fx(xm), fy(y - XTICK - xlab - 0.12)), ncol=4, frameon=False, fontsize=FS,
                    handlelength=1.3, handleheight=0.9, columnspacing=1.5, handletextpad=0.5, borderaxespad=0.0)
     return fig
@@ -177,9 +183,10 @@ def main():
     ap.add_argument("--out", default=os.path.join(HERE, "..", "..", "..", "paper", "figures", "station.pdf"))
     ap.add_argument("--png", default=None, help="PNG preview (default: paper/build/preview/<name>.png)")
     ap.add_argument("--variant", choices=("v1", "v2"), default="v1")
-    ap.add_argument("--instance", default="B=3,R=8,L=4,p=0.25,kappa=0.5,eta=0.05",
+    ap.add_argument("--instance", default="B=3,R=8,L=4,p=0.25,kappa=0.5,eta=0",
                     help="the instance of the grid (eta is the cost of a period of waiting, c in the file)")
     ap.add_argument("--etas", default="0,0.05,0.2", help="v2: the waiting costs shown side by side")
+    ap.add_argument("--line", action="store_true", help="draw the line m <= min(u, L + 1)")
     a = ap.parse_args()
     grid = json.load(open(a.results, encoding="utf-8"))
     if a.variant == "v1":
@@ -189,7 +196,7 @@ def main():
         etas = [float(x) for x in a.etas.split(",")]
         insts = [pick(grid, f"{base},eta={e}") for e in etas]
         titles = [f"waiting cost $\\eta = {e:g}$" for e in etas]
-    fig = build(insts, titles)
+    fig = build(insts, titles, a.line)
     save(fig, a.out, a.png)
     for g in insts:
         cells, mixed = g["um_cells"], g["um_mixed"]

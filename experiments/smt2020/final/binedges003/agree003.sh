@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TASK A1 step 3: table_agree.py per FAB x KIND, ref = the ref fit of this directory, tables = the 8 variants,
+# table_agree.py per FAB x KIND, ref = the ref fit of this directory, tables = the 8 variants,
 # dumps = that KIND's two record files, days >= 90.
 cd "$(dirname "$0")/../../../../fabhybrid/smt2020" || exit 1
 export OMP_NUM_THREADS=1 PYTHONIOENCODING=utf-8

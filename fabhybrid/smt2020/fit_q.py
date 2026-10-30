@@ -1,33 +1,28 @@
 """Off-policy fit of the fire/wait decision: value iteration on the empirical cell MDP.
 
-Why (rounds 1-3 of fit_decision.py, 2026-09-16; that script is now in
-archive/2026-09-batch-line-closed/): the bandit table compares "fire now"
-with "wait, then do whatever the exploration policy does at the next decision". Under a
-policy that fires soon anyway every single firing looks redundant, the greedy refit deletes
-them all, and the deployed table is `full` (LVHM rounds 2 and 3: 24.8 and 25.7 lots/day
-against the rule's 36.0; the round-3 refit with 39-75 counterfactual waits per cell still
-kept one FIRE cell in 72). The value of waiting has to be the NEW policy's own continuation.
+Why: a bandit table compares "fire now" with "wait, then do whatever the exploration
+policy does at the next decision". Under a policy that fires soon anyway every single
+firing looks redundant, the greedy refit deletes them all, and the deployed table is
+`full`. The value of waiting has to be the NEW policy's own continuation.
 
 This script turns every furnace step of every exploration dump into a decision chain --
 (cell, action) -> (reward, elapsed time, next cell) -- and solves the aggregated MDP by
 value iteration. At the fixed point V(c) = max_a Q(c, a), so "wait" in a cell is valued
 under the table policy itself (wait until the cell changes, then act), not under the
 behaviour policy's next firing. A transition does not depend on which policy logged it,
-so all rounds pool. Deployment is the same table lookup as before (Level kind `table`).
+so dumps of different policies pool. Deployment is a table lookup (Level kind `table`).
 
 State cells: tightest live residual x time-to-next-arrival x fill of the head load, with
-fill = k / batch_max (the deployed feature; label.py's earlier "B" was a queue length).
+fill = k / batch_max (the deployed feature).
 Forced states -- full load (fire) and no live clock (wait) -- carry their own cells so the
 continuation value exists everywhere. Reward per transition (the classical batch-service cost: shortage, capacity, holding):
     -(scraps at this step until the next decision) - lam * (batch_max - k) * R * 1[fire]
     - mu * k * elapsed_hours * 1[wait]
 with R the observed run length of the fired machine, k the head-group lots; lam (lots per
-slot-hour) and mu (lots per lot-hour waited) are the two disclosed exchange rates, chosen on
-search seeds. Without mu the learner delays a firing whenever no death is at stake and the
-fab pays in WIP (LVHM, 2026-09-16). Elapsed time is discounted at gamma_h per hour.
+slot-hour) is the price on unused capacity, set in advance, and mu (lots per lot-hour waited) an
+optional cost of waiting, not used for the paper's tables. Elapsed time is discounted at gamma_h per hour.
 
-  python fit_q.py "E/HVLM_explore0p02_s*.json" "E/r2/HVLM_r2_s*.json" "E/r3/HVLM_r3*_s*.json" \\
-      --lam 0.003 --out E/q/HVLM_q_l0p003.json
+  python fit_q.py "E/HVLM_explore0p02_s*.json" --lam 0.003 --out E/q/HVLM_q_l0p003.json
 """
 import argparse
 import glob
@@ -181,7 +176,7 @@ def solve(rows, S, lam, gamma_h, mu=0.0, iters=5000, tol=1e-9):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("dumps", nargs="+", help="glob patterns of readout --dump-lots files (all rounds pool)")
+    ap.add_argument("dumps", nargs="+", help="glob patterns of readout --dump-lots files (all are pooled)")
     ap.add_argument("--lam", type=float, default=0.003, help="lots per slot-hour")
     ap.add_argument("--gamma-h", type=float, default=0.9, help="discount per hour of elapsed time")
     ap.add_argument("--mu", type=float, default=0.0, help="holding cost, lots per lot-hour a head-group lot waits (0 = deaths and capacity only)")

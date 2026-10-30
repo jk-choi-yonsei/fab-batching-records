@@ -344,7 +344,8 @@ def test_tex(tmp_path):
     sr.main(t.args(out, "--tex", "--tex-out", str(tex), "--quiet"))
     s = tex.read_text(encoding="utf-8")
     assert r"\textbf{??}" in s and "Paired on 3 of the 32 seeds." in s and r"\label{tab:shift}" in s
-    assert "% PARTIAL" in s and r"\emph{HVLM}" in s and r"1.5~h at 0.98" in s and " & timeout & " in s
+    assert "% PARTIAL" in s and r"\emph{Release rate 0.90}" in s and "retuned in the testbed at each rate" in s
+    assert "\n    timeout & " in s and r"\quad refitted & " in s and "remaining-time threshold & " in s
 
 
 # ---------------------------------------------------------------- the block's own files (read only)
@@ -1267,18 +1268,29 @@ def test_full_block(full):
     with open(full.tex, encoding="utf-8") as f:
         tex = f.read()
     assert ct.HOLE not in tex and "% PARTIAL" not in tex and r"\label{tab:shift}" in tex and "Paired on" not in tex
-    assert "are 1.5~h at 0.90 and 3~h at 0.80 on HVLM, and 1.5~h at 0.90 and 0.75~h at 0.80 on LVHM, against 1.5~h at 0.98." in tex
+    assert "retuned in the testbed at each rate on the eight selection seeds." in tex and "left at 1.5~h" not in tex
     assert "Rate 1.05" not in tex
     runs = full.runs
-    for rate, fab, b_key in ((0.9, "HVLM", "clock"), (0.8, "LVHM", "clock_rt")):   # 1.5 h at 0.90: the same policy
-        for i, k in enumerate(RK):
-            r1 = by_hand(stats, runs[(rate, fab, f"tbl_{k}")], runs[(rate, fab, k)])
-            r2 = by_hand(stats, runs[(rate, fab, f"rft_{k}")], runs[(rate, fab, k)])
-            r4 = by_hand(stats, runs[(rate, fab, f"rft_{k}")], runs[(rate, fab, b_key)])
-            row = " & ".join([f"{rate:.2f}" if i == 0 else "", ct.tex(sr.LABEL[k]), str(20 if k == "nach" else 21),
-                              ct.num(r1["pct"], 1), ct.num(r2["pct"], 1), ct.sgn(r4["mean"]),
-                              ct.ci(r4["lo"], r4["hi"])])
-            assert row + r" \\" in tex, row
+    assert r"\emph{Release rate 0.90}" in tex and r"\emph{Release rate 0.80}" in tex
+    for rate in (0.9, 0.8):                     # each rule's row and its refitted row, in Table 3's layout
+        for k in RK:
+            cells = [ct.tex(sr.LABEL[k])]
+            refit = [r"\quad refitted"]
+            for fab in ("HVLM", "LVHM"):
+                r1 = by_hand(stats, runs[(rate, fab, f"tbl_{k}")], runs[(rate, fab, k)])
+                r2 = by_hand(stats, runs[(rate, fab, f"rft_{k}")], runs[(rate, fab, k)])
+                P = R["rates"][f"{rate:g}"][fab]["policies"]
+                cells += [f"{ct.num(P[k]['completed'])} ({ct.num(P[k]['sd'])})", None, ct.starred(ct.num(r1["pct"], 1), r1)]
+                refit += ["", None, ct.starred(ct.num(r2["pct"], 1), r2)]
+            lines = tex.splitlines()
+            start = next(i for i, l in enumerate(lines) if f"Release rate {rate:.2f}" in l)
+            at = next(i for i in range(start, len(lines)) if lines[i].strip().startswith(cells[0] + " & "))
+            for row, line in ((cells, lines[at]), (refit, lines[at + 1])):
+                got = [c.strip() for c in line.strip().rstrip("\\").split(" & ")]
+                assert len(got) == 7, line
+                for want, g in zip(row, got):
+                    if want is not None:
+                        assert g == want.strip(), (line, want)
 
 
 def test_cli_in_a_fresh_interpreter(partial, tmp_path):

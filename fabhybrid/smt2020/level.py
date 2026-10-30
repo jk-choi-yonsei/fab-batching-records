@@ -1,12 +1,12 @@
 """The level and the gate, learned. The form is not.
 
-`kappa_ladder.py` (archive/2026-10-closed-lines/theory) settles ONE station exactly: the average-reward optimal
+At ONE station the result is exact: the average-reward optimal
 firing policy is a one-number control limit on the tightest residual exactly
 when kappa is outside (1, B-1). Two properties never break there -- the optimal
 fire set is a lower set in the residual profile, and firing always takes the
 largest available load.
 
-`chain_model.py` (archived beside it) settles the CHAIN, and it finds something the one-station
+A model of the CHAIN finds something the one-station
 result cannot: every arm run here, upstream's own rule included, hard-codes
 that a FULL load always fires -- and so does every batch policy whose
 optimality we have been able to check. Deb and Serfozo (1973) prove the optimal
@@ -36,15 +36,11 @@ At beta*f == 0 and g0 >= sum|gamma| this is `clock:h0`, decision for
 decision, on every sample path -- asserted with the feature code fully
 exercised rather than short-circuited, so the assertion tests the path the
 search actually runs. There is therefore no behaviour-cloning step: theta_0 IS
-the paper's arm by construction. The previous attempt cloned the law first,
-reached near-one-hot logits at 0.999995, and PPO could not move the actor off
-them.
+the paper's arm by construction.
 
-*** SCOPE OF THAT CLAIM -- corrected 2026-09-15, it was written as if it held
-for every kind and it does not. It is true only for the kinds that go through
-`decide()`: const, m1, linear, gate1, gate2, gate, mlp, mlpgate, knob. It is
-FALSE for kind="policy", which is the kind both frozen fab learners were
-searched in. `batch_fire.choose` routes `is_policy` to `act()` and returns
+The claim above is true only for the kinds that go through `decide()`:
+const, m1, linear, gate1, gate2, gate, mlp, mlpgate, knob. It is FALSE for
+kind="policy". `batch_fire.choose` routes `is_policy` to `act()` and returns
 before the full-load branch and before the clock branch; `act(self, env,
 groups, now)` takes no `tightest` argument at all, so that kind never evaluates
 `0 <= tightest < h*HOUR` and h0 is inert metadata for it. Its inert point is
@@ -54,12 +50,8 @@ and 30.7 completions/day against clock:1's 38.5 on the same seeds. So a
 kind="policy" search starts ~8.8/day BELOW the rule and has to rediscover
 clocked firing; its gain over theta_0 is the climb back, not a gain over the
 rule. The policy still SEES the clock (phi column own_res) and the class can
-express clock:h exactly -- distill.py --window (now in
-archive/2026-09-batch-line-closed/) builds it from two tanh units
-with zero disagreements -- so what is missing is the starting point and the
-rule's FORM, not the information. To search from the rule in this kind, use
-fit_level.py's --init (same archive folder) with a distilled window artefact
-and --expect-base, which asserts it.
+express clock:h exactly, so what is missing is the starting point and the
+rule's FORM, not the information.
 
 Nested classes, so the question is model selection rather than "did RL win":
 
@@ -147,7 +139,7 @@ def next_frame(env, lot):
     return None
 
 
-# Deployment-time error in the time to the next arrival (an option, not used in the final runs). The simulator
+# Deployment-time error in the time to the next arrival (an option, not used in the paper's runs). The simulator
 # knows the next arrival exactly; a fab's dispatcher reads an MES/RTD estimate. Off unless
 # batch_fire.py --nxt-noise-min / --nxt-missing sets it, and drawn from its own stream, so the
 # simulator's random stream, and every paired comparison, is unchanged.
@@ -273,16 +265,15 @@ class Level:
         # weights would do nothing -- argmax is invariant to a positive scale --
         # so the only knob that sharpens is this one, inside the nonlinearity.
         self.temp = float(temp)
-        # ROUND-2 EXPLORATION for the `table` kind: with probability eps the table's
+        # EXPLORATION for the `table` kind: with probability eps the table's
         # call is flipped. Set per run by batch_fire (--eps), never stored in the
         # artefact; rng is seeded from the run seed there. eps = 0 is the table itself.
         self.eps = 0.0
         self.rng = None
         # ASYMMETRIC exploration: policy-FIRE cells are 1-5% of decisions, so a
         # symmetric eps leaves their counterfactual (wait) arm with single-digit
-        # samples -- the round-2 LVHM collapse rested on 3+3 waits. eps_fw flips
-        # FIRE -> WAIT (set high), eps_wf flips WAIT -> FIRE (set low). When both
-        # are 0 the symmetric eps applies.
+        # samples. eps_fw flips FIRE -> WAIT (set high), eps_wf flips WAIT -> FIRE
+        # (set low). When both are 0 the symmetric eps applies.
         self.eps_fw = 0.0
         self.eps_wf = 0.0
         self.w = np.zeros(D) if w is None else np.asarray(w, np.float64)
@@ -298,10 +289,9 @@ class Level:
         #   LOOK-AHEAD  fire with no urgent clock iff q0 + wq x > 0   q0 = -1, wq = 0 -> never
         #   HOLD        fire a full load iff g0 + gamma x >= 0        g0 = 1, gamma = 0 -> always
         # Turning a knob moves the FRACTION OF STATES it applies to continuously,
-        # which is what the searched score could not do: there the rule's margin
-        # was a hard +/-0.5 step, so a correction either changed nothing or
-        # flipped a whole region (10 of 64 candidates held every load and stopped
-        # the fab). Same action space, a landscape an ES can actually walk.
+        # which is what the searched score cannot do: there the rule's margin is
+        # a hard +/-0.5 step, so a correction either changes nothing or flips a
+        # whole region. Same action space, a landscape an ES can actually walk.
         self.wq = np.zeros(D)
         self.q0 = -1.0
         self.t_head, self.t_own = float(t_head), float(t_own)
@@ -337,7 +327,7 @@ class Level:
         """The full action space: score every candidate group and the wait
         option, take the argmax. Returns a group index or len(groups).
 
-        This is the learner the paper trains. It is told nothing about clocks
+        This learner is told nothing about clocks
         or thresholds: it starts as the shipped rule (`full`) and moves only on
         throughput. It can fire an under-full load, choose WHICH load, and hold
         a full one -- every dimension the theory has an opinion about -- so
@@ -369,7 +359,7 @@ class Level:
         """The whole predicate, so the arm has one place to call and the
         inertness argument covers both halves."""
         if self.kind == "setnet":
-            # THE SET LEARNER (fit_setnet.py, archive/2026-10-closed-lines/setnet): the forced states as in the table; in a free
+            # THE SET LEARNER: the forced states as in the table; in a free
             # decision the ensemble reads every clocked lot at the machine and may overturn
             # the table's decision only unanimously, and only in the table cells that passed
             # the own-entry test -- elsewhere the table decides. The clock set is built with
@@ -392,12 +382,11 @@ class Level:
                 if rec is not None and l.actual_step.order == rec[0]:
                     cl.append(((rec[1] - now) / HOUR, l in g0))
             bm = g0[0].actual_step.batch_max
-            import setnet_feat          # the set learner is archived (archive/2026-10-closed-lines/setnet)
+            import setnet_feat          # not part of this package
             toks, g = setnet_feat.features(cl, len(g0), bm, x[3] * 24.0, len(env._groups), False)
             return setnet_feat.decide_free(self.setnet, toks, g, self.margin[i][j][k])
         if self.kind == "table":
-            # THE DECISION-LEVEL LEARNER (written by fit_q.py; first by fit_decision.py,
-            # now in archive/2026-09-batch-line-closed/): a 3-d table of causal
+            # THE DECISION-LEVEL LEARNER (written by fit_q.py): a 3-d table of causal
             # estimates from randomised exploration -- fire where the estimated lives
             # saved exceed lambda x slot-hours spent. No rule anywhere in it; h0 is
             # inert metadata. Full loads fire as in every arm; no live clock -> wait,
@@ -606,8 +595,8 @@ class Level:
                 mask=d.get("mask"))
         L.wq = np.asarray(d.get("wq", np.zeros(D)), np.float64)
         L.q0 = float(d.get("q0", -1.0))
-        # artefacts written before the temperature knob existed load at 1.0, which
-        # is the identity, so every frozen result stays reproducible from its file
+        # an artefact without a temperature loads at 1.0, which is the identity,
+        # so every frozen result stays reproducible from its file
         L.temp = float(d.get("temp", 1.0))
         if d.get("kind") in ("table", "setnet"):
             L.table = {"edges": d["edges"], "fire": d["fire"], "lam": d.get("lam"), "H": d.get("H"),
@@ -642,9 +631,7 @@ def source_gate(th):
     tolerance, and permit processing only if the demand fits. Claim 1 carries no
     batching and nothing that holds a full batch, so it is prior art for
     "refuse to start a clock the downstream cannot honour" and not for the
-    decision this paper measures -- which is why it is the right baseline.
-    Having both on the same protocol also measures the upstream-coordination
-    lead directly, instead of leaving it as a suggestion.
+    decision at the idle batch tool.
 
     Refuse to dispatch a lot whose completion would start a clock when the
     target family's queue implies the clock cannot be met with `th` of the

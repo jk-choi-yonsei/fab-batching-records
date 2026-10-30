@@ -5,9 +5,6 @@ aggregates -- and are what the critic reads; the actor sees only its
 candidates. They are pure functions of the simulator state: no policy, no
 network, no fitted model is consulted, so they carry no assumption about who
 is dispatching.
-
-Extracted from the old phi_probe module, whose fitted potential failed its
-pre-registered trials twice; the features outlived the potential.
 """
 import math
 from collections import defaultdict
@@ -26,9 +23,9 @@ WARMUP = 365
 
 RISK = ["risk_sat", "w_hopeless", "w_risk_1d", "w_risk_2d", "w_risk_5d",
         "mean_slack_d", "p10_slack_d", "committed_lateness",
-        # v1 debt features (2026-08-06): the exploit test showed a triage burst
-        # cleans the sub-5-day head while its cost -- mid-slack lots quietly
-        # aging -- was invisible above that band. These carry the middle mass.
+        # the bands and debt terms carry the middle mass of the slack distribution:
+        # a policy can clean the sub-5-day head while mid-slack lots quietly age,
+        # which the counts above do not see
         "band_0_5", "band_5_10", "band_10_20", "band_20_40", "band_40p",
         "soft_debt_10d", "aging_pressure"]
 CAP = ["idle_frac", "batch_fill_potential", "batch_under_min_frac", "batch_wip_share",
@@ -41,7 +38,7 @@ GROUPS = {"risk": RISK, "capacity": CAP, "flow": FLOW, "control": CTRL}
 
 
 def snapshot(inst, now, t_days, fam_machines):
-    """All Φ candidate components, from the current state only."""
+    """All the features, from the current state only."""
     f = {"t_days": t_days}
     lots = inst.active_lots
 

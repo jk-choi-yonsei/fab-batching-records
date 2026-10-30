@@ -16,7 +16,7 @@ import confirm_tables as ct  # noqa: E402
 
 
 def test_t_crit_known_quantiles():
-    # two-sided 95% Student quantiles; final_report.t_crit tabulated 2.365, 2.131, 2.040, 1.998
+    # two-sided 95% Student quantiles (tabulated: 2.365, 2.131, 2.040, 1.998)
     for n, t in ((2, 12.706204736), (8, 2.364624252), (16, 2.131449546), (32, 2.039513446), (64, 1.998340543)):
         assert abs(cr.t_crit(n) - t) < 1e-8
     assert cr.t_crit(1) is None

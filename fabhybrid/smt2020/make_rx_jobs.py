@@ -3,8 +3,9 @@
 Stage 1 (collection, per beta and scenario): t1rx -> p2rx -> t2rx -> p3rx -> t3rx, every fit
 with --fold fill, the period-2/3 loggers being the 24-cell tables themselves.
 Stage 2: the five t3rx tables on the selection seeds (80 runs) and the report seeds (320).
-Stage 3 (after rx_select.py, archived): the selected price's t1rx/t2rx, the three restrictions of its
-records, and the timeout-records table refitted without the fill, on the report seeds.
+Stage 3 (after the price selection, final/rx/selection_rx.json): the selected price's t1rx/t2rx, the
+three restrictions of its records, and the timeout-records table refitted without the fill, on the
+report seeds.
 
   python make_rx_jobs.py            # stages 1-2, prints the launch lines
   python make_rx_jobs.py --stage 3  # needs final/rx/selection_rx.json

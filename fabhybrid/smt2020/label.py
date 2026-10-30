@@ -36,7 +36,7 @@ BATCH_MAX = [None]     # optional step -> batch_max fallback, set from --batch-m
 def batch_max_per_step(dec, scr, fallback=None):
     """batch_max (lots) per step from size / phi[0], cross-checked against the scrapped records.
 
-    Dumps written before the record carried `phi` (HVLM round-1 seeds 100-101) have no votes;
+    Dumps whose records carry no `phi` have no votes;
     for those, `fallback` (a step -> batch_max dict, e.g. --batch-max JSON) fills in. A step
     that is neither voted nor covered raises -- never skip a step silently.
     """
@@ -73,7 +73,7 @@ def label_one(path):
         deaths[k].sort()
     # B per step = the step's batch_max in lots. `size` is the head GROUP (every waiting lot
     # of that recipe), not the load, so its maximum is a queue length; phi[0] = size / batch_max
-    # by construction in level.phi, which gives batch_max back exactly (2026-09-16 fix).
+    # by construction in level.phi, which gives batch_max back exactly.
     B = batch_max_per_step(dec, scr, BATCH_MAX[0])
     # decision days per machine, for the recipe length of a fire
     by_m = defaultdict(list)

@@ -1,10 +1,9 @@
 #!/bin/bash
-# 2026-10-19: BC and PPO retrained without the two elapsed-time inputs (train_l1.global_vec), into
-# runs/batch_<fab>_qtcr2, from the 2026-10-10 snapshots; then evaluated on the confirmatory seeds 64-95 as rows 12-13
-# of PROTOCOL_confirm.md (the 2026-10-10 evaluations move to final/confirm/report_bcppo_2026-10-10), and the results
-# file, Table 3 and the paper rebuilt. Run from anywhere; logs under experiments/smt2020/runs and final/confirm.
+# BC and PPO trained without the two elapsed-time inputs (train_l1.global_vec), into runs/batch_<fab>_qtcr2, from the
+# snapshots of snaps_qtcr.txt; then evaluated on the result seeds 64-95, and the results file, Table 3 and Figure 5
+# rebuilt. Run from anywhere, in the Python environment of requirements.txt; logs under experiments/smt2020/runs and
+# final/confirm.
 set -u
-export PATH="/c/Users/jkchoi/miniconda3/envs/RL:/c/Users/jkchoi/miniconda3/envs/RL/Scripts:$PATH"
 export OMP_NUM_THREADS=1 PYTHONIOENCODING=utf-8
 cd "$(dirname "$0")/../../../fabhybrid/smt2020" || exit 1
 EXP=../../experiments/smt2020
@@ -29,7 +28,7 @@ if [ "$n" -gt 0 ]; then
 fi
 JOB=$EXP/jobs/confirm_bcppo_qtcr2.txt
 {
-  echo "# 2026-10-19: BC and PPO retrained without the elapsed-time inputs (runs/batch_<fab>_qtcr2), evaluated on the confirmatory seeds 64-95 as rows 12-13 of PROTOCOL_confirm.md; the 2026-10-10 evaluations are in final/confirm/report_bcppo_2026-10-10"
+  echo "# BC and PPO (runs/batch_<fab>_qtcr2), trained without the elapsed-time inputs, evaluated on the result seeds 64-95"
   grep -v '^#' $EXP/jobs/confirm_bcppo_qtcr.txt | sed 's#/batch_\(HVLM\|LVHM\)_qtcr/#/batch_\1_qtcr2/#g'
 } > "$JOB"
 say "evaluating: $(grep -c eval_batch "$JOB") runs, 14 at a time"

@@ -32,7 +32,7 @@ def main():
     ap.add_argument("--window", type=int, default=60, help="release supply kept beyond the warm-up")
     ap.add_argument("--arm", default="clock:2")
     ap.add_argument("--cqt-rule", default="none",
-                    help="queue-time rule of the warm-up (none or qtcr); the 2026-09 snapshots used none")
+                    help="queue-time rule of the warm-up (none or qtcr)")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
 

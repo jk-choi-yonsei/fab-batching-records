@@ -1,13 +1,14 @@
-"""Table 4 of the paper: agreement of the tables fitted from the timeout and minimum-batch-size rules' records at
-each price with the tables at the paper's price, as the share of the free decisions of the records at which the two
-take the same action. With --full, the same table over every setting of the fit (gamma, n0, the bin boundaries) is
-written as well, for the repository; the paper gives those as a range in Section 5.3.
+"""Table 4 of the paper: agreement of the tables fitted from the timeout and minimum-batch-size rules' records with
+one setting of the fit changed (the price, the discount, n0, the bin boundaries) with the tables at the paper's
+settings, as the share of the free decisions of the records at which the two take the same action; the lowest
+value over the values tried in each group. With --full, the same table over every setting of the fit (gamma, n0, the bin boundaries) is
+written as well, for the repository; Table 4 gives the lowest agreement of each group of settings.
 
-  python sensitivity_table.py                 -> paper/tables/sensitivity.tex (the price rows, Table 4)
+  python sensitivity_table.py                 -> paper/tables/sensitivity.tex (Table 4, one row per group)
   python sensitivity_table.py --full OUT.tex  -> also the table over every setting, to OUT.tex
 
-Sources: experiments/smt2020/final/paperfacts/rule_tables_summary.json (price, gamma, n0; 2026-10-03) and
-experiments/smt2020/final/binedges003/summary.json (bin boundaries at beta 0.003; 2026-10-09).
+Sources: experiments/smt2020/final/paperfacts/rule_tables_summary.json (price, gamma, n0) and
+experiments/smt2020/final/binedges003/summary.json (bin boundaries at beta 0.003).
 """
 import argparse
 import json
@@ -26,13 +27,13 @@ GAMMAS = ["0.8", "0.95", "0.99"]
 N0S = ["1", "3", "30"]
 # the bin boundaries of the paper, and each variant as (key, axis, its boundaries, or the factor they are scaled by);
 # the row label is made from these and checked against the boundaries that were run (summary.json), so that a label
-# cannot drift from the run ("scaled by 1.5" was printed for Ah, run at 0.5, 2, 6 h, until 2026-10-19)
+# cannot drift from the run
 REF = {"tightest": [0.25, 0.5, 1, 2, 4], "nxt": [0.25, 1, 3]}
 BINS = [("Rc", "tightest", [0.5, 1, 2, 4], None), ("Rf", "tightest", [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4], None),
         ("Rl", "tightest", None, 0.75), ("Rh", "tightest", None, 1.5),
         ("Ac", "nxt", [0.5, 2], None), ("Af", "nxt", [0.25, 0.5, 1, 2, 3, 6], None),
         ("Al", "nxt", None, 0.5), ("Ah", "nxt", None, 2)]
-HEADING = {"tightest": "Residual boundaries", "nxt": "Arrival boundaries"}
+HEADING = {"tightest": r"Bin boundaries of $m_{\min}$", "nxt": r"Bin boundaries of $u$"}
 HEAD = r"""    & \multicolumn{2}{c}{HVLM} & \multicolumn{2}{c}{LVHM} \\
     \cmidrule(lr){2-3} \cmidrule(l){4-5}
     LABEL & Timeout & Min.\ batch size & Timeout & Min.\ batch size \\"""
@@ -92,12 +93,34 @@ def body(rows, indent):
     return "\n".join(out)
 
 
-def price_table(s):
-    """Table 4: the price rows, in the paper's table layout"""
-    cap = (r"Share (\%) of the free decisions of the records at which the table refitted at each price takes the "
-           r"action of the table at $\beta = 0.003$, for the records of the timeout and minimum-batch-size rules.")
-    return interact_table(cap, "tab:sensitivity", r"@{}l cccc@{}", HEAD.replace("LABEL", r"Price $\beta$"),
-                          body(price_rows(s), ""), "6pt", "", COMMENT)
+PRICE_GROUPS = [("Price $\\beta$, 0.002 to 0.02", ["0.002", "0.0025", "0.004", "0.005", "0.0075", "0.01", "0.015", "0.02"]),
+                ("Price $\\beta$, 0.001 to 0.0016", ["0.001", "0.0016"]),
+                ("Price $\\beta$, 0.0005", ["0.0005"])]
+
+
+def group_rows(s, b):
+    """Table 4: one row per group of settings, the lowest agreement over the values tried, for each of the four tables"""
+    assert sorted(p for _, ps in PRICE_GROUPS for p in ps) == sorted(PRICES)
+    rows = [(label, [min(agree(s, f, k, "price", p) for p in ps) for f, k in COLS]) for label, ps in PRICE_GROUPS]
+    rows.append(("Discount $\\gamma$, 0.8 to 0.99", [min(agree(s, f, k, "gamma", g) for g in GAMMAS) for f, k in COLS]))
+    rows.append(("$n_0$, 1 to 30", [min(agree(s, f, k, "n0", n) for n in N0S) for f, k in COLS]))
+    for axis in ("tightest", "nxt"):
+        keys = [key for key, ax, _, _ in BINS if ax == axis]
+        rows.append((HEADING[axis], [min(b["per_fab_kind"][f"{f}_{k}"]["rows"][key]["agree_pct"] for key in keys)
+                                     for f, k in COLS]))
+    return rows
+
+
+def group_table(s, b):
+    """Table 4, in the paper's table layout"""
+    cap = r"Agreement (\%) of the refitted tables with the tables of Figure~\ref{fig:tables}."
+    note = (r"  \tabnote{Agreement: over the values tried, the lowest share of the free decisions in the records at "
+            r"which the refitted table takes the same action as the table of Figure~\ref{fig:tables}. Values tried: eight "
+            r"prices from 0.002 to 0.02, two from 0.001 to 0.0016, and 0.0005; $\gamma$ of 0.8, 0.95, and 0.99 per "
+            r"hour; $n_0$ of 1, 3, and 30; each set of bin boundaries coarsened, refined, or scaled by 0.75 or 1.5 "
+            r"for $m_{\min}$ and by 0.5 or 2 for $u$.}" + "\n")
+    return interact_table(cap, "tab:sensitivity", r"@{}l cccc@{}", HEAD.replace("LABEL", "Changed in the refit"),
+                          body(group_rows(s, b), ""), "6pt", note, COMMENT)
 
 
 def full_table(s, b):
@@ -117,8 +140,8 @@ def main():
     a = ap.parse_args()
     s, b = load()
     with open(a.out, "w", encoding="utf-8", newline="\n") as f:
-        f.write(price_table(s))
-    print("wrote", a.out, f"({len(PRICES)} rows)")
+        f.write(group_table(s, b))
+    print("wrote", a.out, "(one row per group of settings)")
     if a.full:
         with open(a.full, "w", encoding="utf-8", newline="\n") as f:
             f.write(full_table(s, b))

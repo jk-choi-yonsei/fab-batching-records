@@ -10,7 +10,7 @@
 
 It only reads. It never calls the parts of make_shift_jobs.py that write (stage_b, check_step0, gate_high,
 prelaunch, write_all) and imports no simulator module. Run it with -B: the block's chain imports from this
-folder, and stale bytecode in a synced folder once changed a trajectory.
+folder, and stale bytecode in a synced folder can change a trajectory.
 
 Every file name comes from make_shift_jobs.py. A run that is missing is left out, never an error; a run that
 is unreadable or not the block's configuration (dataset, seed, 360 days, the rate, qtcr, scrap, the 87-day
@@ -68,7 +68,7 @@ LABEL = {"timeout": "timeout", "mbs": "minimum batch size", "nach": "NACH"}
 OWN = {"timeout": "the timeout rule's records", "mbs": "the minimum-batch-size rule's records",
        "nach": "NACH's records"}
 GROUPS = (("Rules", ("timeout", "mbs", "nach")),
-          ("Threshold tuned in the simulator (at 0.98)", ("clock",)),
+          ("Threshold tuned in the testbed (at 0.98)", ("clock",)),
           ("Threshold retuned at the rate", ("clock_rt",)),
           ("Table fitted at 0.98", ("tbl_timeout", "tbl_mbs", "tbl_nach")),
           ("Table refitted at the rate", ("rft_timeout", "rft_mbs", "rft_nach")))
@@ -933,77 +933,108 @@ def markdown(res):
 # ---------------------------------------------------------------- LaTeX (paper/tables/shift.tex)
 
 def shift_tex(res, src):
-    """records.tex's layout: one emph group per scenario, rows rate x rule; holes print as \\textbf{??}"""
+    """Table 5 in Table 3's layout: one block per release rate; a rule, the table fitted at 0.98 from its records and
+    its gain; the refitted table under it, marked against the retuned threshold; the retuned remaining-time threshold
+    closing the block. Holes print as \\textbf{??} while the block is partial."""
     import confirm_tables as ct
     m = res["meta"]
     lo, hi = m["report_seeds"]
     N = hi - lo + 1
-    notes, rows = ct.Notes(), []
+    PH = r"\phantom{$^{\dagger}$}"
+    EMPTY = {"policies": {}, "comparisons": {}, "selection": {}}
+    notes = ct.Notes()
 
-    def mark(c):
+    def pair(c):
         return notes.mark(f"Paired on {c['n']} of the {N} seeds.") if c["n"] < N else ""
 
-    def pct(c):
-        if not c or "n" not in c or not c["n"] or c["pct"] is None:
-            return ct.HOLE
-        return ct.num(c["pct"], 1) + mark(c)
+    def comp(B, key):
+        c = B["comparisons"].get(key)
+        if c is not None and "same_as" in c:
+            c = B["comparisons"].get(c["same_as"])
+        return c if c is not None and c.get("n") else None
 
-    ncell = 24
-    for fab in FABS:
-        rows.append(rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{{fab}}}}} \\")
-        first = True
-        for rk, R in res["rates"].items():
-            B = R.get(fab)
-            if B is None:
-                continue
-            if not first:
-                rows.append(r"\addlinespace[3pt]")
-            first = False
-            C = B["comparisons"]
-            for i, k in enumerate(RK):
-                rt = C[f"rft_{k}-clock_rt"]
-                rt = C[rt["same_as"]] if "same_as" in rt else rt if "n" in rt else None
-                have = rt is not None and rt["n"] and rt["mean"] is not None
-                rec = B["records"][k]
-                ncell = rec["cells"] or ncell
-                rows.append(" & ".join([
-                    f"{float(rk):.2f}" if i == 0 else "", ct.tex(LABEL[k]),
-                    ct.HOLE if rec["cells_both"] is None else str(rec["cells_both"]),
-                    pct(C[f"tbl_{k}-{k}"]), pct(C[f"rft_{k}-{k}"]),
-                    (ct.sgn(rt["mean"]) + mark(rt)) if have else ct.HOLE,
-                    ((ct.ci(rt["lo"], rt["hi"]) if rt["lo"] is not None else "--") if have else ct.HOLE)]) + r" \\")
-        rows.append(r"\midrule")
+    def retuned(B):
+        """per-seed completions of the retuned threshold: the 1.5 h threshold where that is the retuned value, else
+        the 1.5 h threshold plus the paired differences of clock_rt-clock"""
+        q, c = B["policies"].get("clock"), B["comparisons"].get("clock_rt-clock")
+        if not q or not q.get("n") or c is None:
+            return None
+        base = q["per_seed"]["completed"]
+        if c.get("same_policy"):
+            return list(base)
+        if not c.get("n") or len(c["per_seed"]) != len(base):
+            return None
+        return [x + d for x, d in zip(base, c["per_seed"])]
+
+    def mean_sd(xs):
+        n = len(xs)
+        mu = sum(xs) / n
+        return mu, (sum((x - mu) ** 2 for x in xs) / (n - 1)) ** 0.5
+
+    def mark_rt(B, k):
+        c = comp(B, f"rft_{k}-clock_rt")
+        p = ct.p_paired_t(c)
+        if p is not None and p < 0.05:
+            return r"$^{\dagger}$" if c["mean"] > 0 else r"$^{\ddagger}$"
+        return PH
+
+    def table_cells(B, key, gain_key, mark):
+        t, c = B["policies"].get(key), comp(B, gain_key)
+        if not t or not t.get("n") or c is None:
+            return [ct.HOLE, ct.HOLE]
+        mean = ct.num(t["completed"])
+        if c["wins"] == c["n"]:
+            mean = rf"\textbf{{{mean}}}"
+        return [f"{mean}{mark} ({ct.num(t['sd'])})", ct.starred(ct.num(c["pct"], 1), c) + pair(c)]
+
+    def rule_cells(B, k):
+        q = B["policies"].get(k)
+        pol = f"{ct.num(q['completed'])} ({ct.num(q['sd'])})" if q and q.get("n") else ct.HOLE
+        return [pol] + table_cells(B, f"tbl_{k}", f"tbl_{k}-{k}", PH)
+
+    def refit_cells(B, k):
+        return [""] + table_cells(B, f"rft_{k}", f"rft_{k}-{k}", mark_rt(B, k))
+
+    def thr_cells(B):
+        xs = retuned(B)
+        if xs is None or len(xs) < 2:
+            return [ct.HOLE, "", ""]
+        mu, sd = mean_sd(xs)
+        return [f"{ct.num(mu)} ({ct.num(sd)})" + ("" if len(xs) == N else pair({"n": len(xs)})), "", ""]
+
+    rows, rates = [], []
+    for rk, R in res["rates"].items():
+        if R["status"] == "skipped":
+            continue
+        rates.append(f"{float(rk):.2f}")
+        B = {fab: (R.get(fab) or EMPTY) for fab in FABS}
+        rows.append(rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{Release rate {float(rk):.2f}}}}} \\")
+        for k in RK:
+            rows.append(" & ".join([ct.tex(LABEL[k])] + rule_cells(B["HVLM"], k) + rule_cells(B["LVHM"], k)) + r" \\")
+            rows.append(" & ".join([r"\quad refitted"] + refit_cells(B["HVLM"], k) + refit_cells(B["LVHM"], k)) + r" \\")
+        rows.append(" & ".join(["remaining-time threshold"] + thr_cells(B["HVLM"]) + thr_cells(B["LVHM"])) + r" \\")
+        rows.append(r"\addlinespace[3pt]")
     rows.pop()
-
-    def h_of(R, fab):
-        s = (R.get(fab) or {}).get("selection") or {}
-        if s.get("selected_h") is None:
-            return ct.HOLE
-        return f"{s['selected_h']}~h" + ("" if s.get("selected_source") != "files (provisional)" else
-                                         notes.mark("Chosen from the selection runs before make_shift_jobs.py "
-                                                    "recorded it."))
-
-    parts = []
-    for fab in FABS:
-        xs = [f"{h_of(R, fab)} at {float(rk):.2f}" for rk, R in res["rates"].items() if R.get(fab) is not None]
-        if xs:
-            parts.append(" and ".join(xs) + f" on {fab}")
-    general = (rf"Cells: the number of the {ncell} cells in which the new records hold each action at least $n_0$ "
-               rf"times. Diff.: the paired difference in completed lots per day. The values of $\theta$ retuned at each rate are " + ", and ".join(parts)
-               + r", against 1.5~h at 0.98.")
-    skipped = [f"{float(rk):.2f}" for rk, R in res["rates"].items() if R["status"] == "skipped"]
+    rate_s = " and ".join(rates)
+    general = (r"Fitted table: the table fitted at 0.98 from the records of the rule in its row. Refitted: the table "
+               r"fitted from that rule's records made at the new rate. Remaining-time threshold: $\theta$ retuned in "
+               r"the testbed at each rate on the eight selection seeds. Equal means "
+               r"and SDs come from policies that take the same actions. Bold: more lots than the rule on every "
+               r"seed. Paired $t$-test: $^{**}p < 0.01$ for the gain over the rule; for a refitted table, "
+               r"$^{\dagger}p < 0.05$ for more and $^{\ddagger}p < 0.05$ for fewer lots than the remaining-time "
+               r"threshold.")
     body = "\n".join("    " + r for r in rows)
-    head = r"""    & & & Fitted at 0.98 $-$ rule & Refitted $-$ rule & \multicolumn{2}{c}{Refitted $-$ retuned threshold} \\
-    \cmidrule(lr){4-4} \cmidrule(lr){5-5} \cmidrule(l){6-7}
-    Rate & Records of & Cells & (\%) & (\%) & Diff. & 95\% CI \\"""
-    cap_ = r"Results at the release rates of 0.90 and 0.80."
+    head = r"""    & \multicolumn{3}{c}{HVLM} & \multicolumn{3}{c}{LVHM} \\
+    \cmidrule(lr){2-4} \cmidrule(l){5-7}
+    & Policy & Fitted table & Gain (\%) & Policy & Fitted table & Gain (\%) \\"""
+    cap_ = rf"Completed lots per day at the release rates of {rate_s}, mean (SD) over the {N} seeds."
     e, p = m["runs_expected"], m["runs_present"]
     comment = "\n".join(["% generated by fabhybrid/smt2020/shift_report.py from " + rel(src),
                          f"% shift results of {m['generated']}, seeds {lo}-{hi}, {p['report']} of {e['report']} "
                          f"report runs; do not edit by hand"]
                         + ([] if m["finished"] else
                            ["% PARTIAL: the block had not finished when these numbers were computed"])) + "\n"
-    return ct.interact_table(cap_, "tab:shift", r"@{}l l c c c rc@{}", head, body, "3pt", notes.render(general),
+    return ct.interact_table(cap_, "tab:shift", r"@{}l ccc ccc@{}", head, body, "4pt", notes.render(general),
                              comment)
 
 
@@ -1023,11 +1054,20 @@ def main(argv=None):
     ap.add_argument("--tex-out", default=None, help="where (default paper/tables/shift.tex, finished block only)")
     ap.add_argument("--quiet", action="store_true", help="no markdown on stdout")
     ap.add_argument("--no-log", action="store_true", help="do not note an interim read in interim_looks.log")
+    ap.add_argument("--from-results", default=None,
+                    help="write the LaTeX table from this results file and do nothing else")
     a = ap.parse_args(argv)
     try:
         sys.stdout.reconfigure(errors="backslashreplace")
     except (AttributeError, ValueError):
         pass
+    if a.from_results:
+        res = json.load(open(a.from_results, encoding="utf-8"))
+        tex_out = os.path.abspath(a.tex_out) if a.tex_out else TEX
+        with open(tex_out, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(shift_tex(res, os.path.abspath(a.from_results)))
+        print("wrote", tex_out)
+        return
 
     rates = [float(x) for x in a.rates.split(",") if x.strip()]
     for r in rates:

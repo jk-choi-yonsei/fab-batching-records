@@ -1,5 +1,5 @@
-"""Brute-force check of the last-moment policy (the sentence of Section 3.2 of the paper that cites Berg et al.
-1998; stated as a proposition in the appendix until 2026-10-19): with non-interfering runs and a
+"""Brute-force check of the last-moment policy (the result of Berg et al. 1998 that Section 2 of the paper
+cites): with non-interfering runs and a
 common limit tau, the last-moment policy is optimal against EVERY schedule -- including
 ones that drop lots and ones that know the future -- whenever kappa <= 1.
 
