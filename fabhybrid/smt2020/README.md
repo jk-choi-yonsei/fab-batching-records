@@ -14,7 +14,7 @@ Tables
 - `fit_q.py` fits a table from records by value iteration: `--lam` the price, `--fold fill` the 24 cells,
   `--fold nxt,fill` the one-axis table, `--backoff` the one-axis table's entry for a cell short of either
   action.
-- `label.py` reads the load capacity of each step from a record.
+- `label.py` reads the batch capacity of each step from a record.
 - `table_agree.py` gives the share of recorded decisions on which two tables take the same action.
 
 Runs
